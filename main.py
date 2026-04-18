@@ -70,13 +70,19 @@ class AmazonBestsellerTracker:
             }
             session = requests.Session()
             session.headers.update(headers)
-            url = self.config['url']
             all_items = []
             seen_keys = set()
-            page_count = 0
 
-            while url and len(all_items) < 100 and page_count < 5:
-                response = session.get(url, timeout=20)
+            # Amazon beauty bestsellers are currently exposed as 2 pages (1-50, 51-100).
+            page_urls = [self.config['url']]
+            second_page = self.config.get('page_2_url') or f"{self.config['url']}?pg=2"
+            page_urls.append(second_page)
+
+            for page_url in page_urls:
+                if len(all_items) >= 100:
+                    break
+
+                response = session.get(page_url, timeout=20)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.content, 'lxml')
                 page_items = self._parse_bestseller_items(soup)
@@ -90,13 +96,6 @@ class AmazonBestsellerTracker:
                     all_items.append(item)
                     if len(all_items) >= 100:
                         break
-
-                next_link = soup.select_one('li.a-last a, a#pagnNextLink, a.a-last')
-                if next_link and next_link.get('href'):
-                    url = requests.compat.urljoin(url, next_link['href'])
-                    page_count += 1
-                else:
-                    break
 
             return all_items[:100]
         except requests.RequestException as e:
@@ -151,17 +150,56 @@ class AmazonBestsellerTracker:
         return deduped
 
     def _extract_client_recs_ranks(self, soup):
+        raw_candidates = []
+
         rec_nodes = soup.select('[data-client-recs-list]')
-        if not rec_nodes:
+        for node in rec_nodes:
+            raw_value = node.get('data-client-recs-list') or ''
+            if raw_value:
+                raw_candidates.append(raw_value)
+
+        if not raw_candidates:
+            html_text = str(soup)
+            raw_candidates.extend(re.findall(r'data-client-recs-list="([^"]+)"', html_text))
+            raw_candidates.extend(re.findall(r"data-client-recs-list='([^']+)'", html_text))
+
+        if not raw_candidates:
             return []
 
-        raw = max((node.get('data-client-recs-list') or '' for node in rec_nodes), key=len, default='')
+        best_ranks = []
+        for raw in sorted(raw_candidates, key=len, reverse=True):
+            ranks = self._parse_client_recs_blob(raw)
+            if len(ranks) > len(best_ranks):
+                best_ranks = ranks
+            if len(best_ranks) >= 50:
+                break
+
+        return best_ranks
+
+    def _parse_client_recs_blob(self, raw):
         if not raw:
             return []
 
-        try:
-            data = json.loads(html.unescape(raw))
-        except Exception:
+        decoded = html.unescape(raw)
+        candidates = [decoded, decoded.replace('&quot;', '"')]
+
+        if '[' in decoded and ']' in decoded:
+            start = decoded.find('[')
+            end = decoded.rfind(']')
+            if start >= 0 and end > start:
+                candidates.append(decoded[start:end + 1])
+
+        data = None
+        for candidate in candidates:
+            try:
+                parsed = json.loads(candidate)
+                if isinstance(parsed, list):
+                    data = parsed
+                    break
+            except Exception:
+                continue
+
+        if not data:
             return []
 
         ranks = []

@@ -120,15 +120,16 @@ class AmazonBestsellerTracker:
 
                 for page_index, page_url in enumerate(page_urls, start=1):
                     logging.info(f'Browser loading page {page_index}: {page_url}')
-                    page.goto(page_url, timeout=30000)
-                    time.sleep(self.config.get('browser_initial_wait', 2))
+                    page.goto(page_url, timeout=45000, wait_until='networkidle')
+                    page.wait_for_timeout(self.config.get('browser_initial_wait', 4) * 1000)
 
-                    scroll_steps = self.config.get('browser_scroll_steps', 2)
+                    scroll_steps = self.config.get('browser_scroll_steps', 6)
                     scroll_delay = self.config.get('browser_scroll_delay', 2)
                     for _ in range(scroll_steps):
-                        page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
-                        time.sleep(scroll_delay)
+                        page.evaluate('window.scrollBy(0, document.body.scrollHeight);')
+                        page.wait_for_timeout(scroll_delay * 1000)
 
+                    page.wait_for_timeout(1000)
                     html = page.content()
                     soup = BeautifulSoup(html, 'lxml')
                     page_items = self._parse_bestseller_items(soup)
@@ -344,6 +345,17 @@ class AmazonBestsellerTracker:
             return f'(상승: {diff})'
         return f'(하락: {abs(diff)})'
 
+    def _format_rank_diff_en(self, old_item, new_rank):
+        if not old_item:
+            return '(New)'
+        old_rank = old_item['rank']
+        if old_rank == new_rank:
+            return '(No change)'
+        diff = old_rank - new_rank
+        if diff > 0:
+            return f'(Up {diff})'
+        return f'(Down {abs(diff)})'
+
     def build_summary_text(self):
         data = self.load_data()
         if not data or 'bestsellers' not in data:
@@ -480,73 +492,80 @@ class AmazonBestsellerTracker:
             lines.append(current_line)
         return lines
 
-    def _build_image_card(self, headline, items_by_brand, footer_text=None):
-        width = 1200
-        padding = 40
-        title_font = self._get_font(40)
-        brand_font = self._get_font(28)
-        item_title_font = self._get_font(24)
-        item_meta_font = self._get_font(20)
-        small_font = self._get_font(18)
+    def _truncate_text(self, text, max_chars=20):
+        if not text:
+            return ''
+        if len(text) <= max_chars:
+            return text
+        return text[:max_chars - 1].rstrip() + '…'
 
-        line_height = 34
+    def _build_image_card(self, headline, items_by_brand, footer_text=None):
+        width = 1400
+        padding = 50
+        title_font = self._get_font(52)
+        brand_font = self._get_font(36)
+        item_title_font = self._get_font(32)
+        item_meta_font = self._get_font(26)
+        small_font = self._get_font(22)
+
         y = padding
-        height = padding + 140
+        height = padding + 180
 
         for entry in items_by_brand:
-            block_height = 170
+            block_height = 220
             if entry['items']:
-                block_height += len(entry['items']) * 150
-            height += block_height + 20
+                block_height += len(entry['items']) * 170
+            height += block_height + 30
 
         if footer_text:
-            height += 60
+            height += 70
 
         image = Image.new('RGB', (width, height), color=(255, 255, 255))
         draw = ImageDraw.Draw(image)
         draw.text((padding, y), headline, fill=(20, 20, 20), font=title_font)
-        y += 70
-        draw.text((padding, y), datetime.now().strftime('생성 시간: %Y-%m-%d %H:%M:%S'), fill=(100, 100, 100), font=item_meta_font)
+        y += 90
+        draw.text((padding, y), datetime.now().strftime('Generated: %Y-%m-%d %H:%M:%S'), fill=(100, 100, 100), font=item_meta_font)
         y += 40
         draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=2)
-        y += 30
+        y += 35
 
         for entry in items_by_brand:
-            draw.rectangle((padding - 10, y - 10, width - padding + 10, y + 160), fill=(248, 248, 250), outline=(220, 220, 220), width=1)
-            draw.text((padding, y), f"{entry['brand']} ({len(entry['items'])}개)", fill=(10, 10, 10), font=brand_font)
-            y += 45
+            draw.rectangle((padding - 10, y - 10, width - padding + 10, y + 190), fill=(245, 245, 248), outline=(210, 210, 215), width=1)
+            draw.text((padding, y), f"{entry['brand']} ({len(entry['items'])})", fill=(15, 15, 15), font=brand_font)
+            y += 55
 
             if not entry['items']:
-                draw.text((padding, y), '현재 목록에 등록된 제품이 없습니다.', fill=(120, 120, 120), font=item_meta_font)
-                y += 80
+                draw.text((padding, y), 'No matched products found.', fill=(110, 110, 110), font=item_meta_font)
+                y += 100
                 continue
 
             for item in entry['items']:
-                thumb = self._fetch_remote_image(item.get('image'))
+                thumb = self._fetch_remote_image(item.get('image'), size=(180, 180))
                 if thumb:
                     image.paste(thumb, (padding, y))
                 else:
-                    draw.rectangle((padding, y, padding + 140, y + 140), fill=(235, 235, 235), outline=(200, 200, 200))
-                    draw.text((padding + 18, y + 55), 'No Image', fill=(150, 150, 150), font=small_font)
+                    draw.rectangle((padding, y, padding + 180, y + 180), fill=(235, 235, 235), outline=(190, 190, 190), width=1)
+                    draw.text((padding + 22, y + 70), 'No Image', fill=(130, 130, 130), font=small_font)
 
-                text_x = padding + 170
-                title_lines = self._wrap_text(f"{item['rank']}위 {item['title']}", item_title_font, width - text_x - padding, draw)
-                for line in title_lines[:3]:
-                    draw.text((text_x, y), line, fill=(20, 20, 20), font=item_title_font)
-                    y += 30
+                text_x = padding + 210
+                title = self._truncate_text(item.get('title', ''), 20)
+                title_lines = self._wrap_text(f"#{item['rank']} {title}", item_title_font, width - text_x - padding, draw)
+                for line in title_lines[:2]:
+                    draw.text((text_x, y), line, fill=(25, 25, 25), font=item_title_font)
+                    y += 38
 
                 diff_text = item.get('diff_text', '')
                 draw.text((text_x, y), diff_text, fill=(90, 90, 90), font=item_meta_font)
-                y += 30
-                meta_text = f"{item.get('price', 'N/A')} · {item.get('rating', 'N/A')} · {item.get('reviews', 'N/A')}"
+                y += 36
+                meta_text = f"{item.get('price', 'N/A')} / {item.get('rating', 'N/A')} / {item.get('reviews', 'N/A')}"
                 draw.text((text_x, y), meta_text, fill=(90, 90, 90), font=small_font)
-                y += 50
+                y += 60
 
             y += 10
 
         if footer_text:
             draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=2)
-            y += 20
+            y += 25
             draw.text((padding, y), footer_text, fill=(80, 80, 80), font=small_font)
 
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
@@ -557,7 +576,7 @@ class AmazonBestsellerTracker:
     def build_summary_image(self, data, previous_data):
         brands = self.state.get('brands', [])
         if not brands:
-            items_by_brand = [{'brand': '추적 중인 브랜드가 없습니다.', 'items': []}]
+            items_by_brand = [{'brand': 'No tracked brands.', 'items': []}]
         else:
             items_by_brand = []
             for brand in brands:
@@ -565,18 +584,18 @@ class AmazonBestsellerTracker:
                 matches = [item for item in data.get('bestsellers', []) if brand_lower in item['title'].lower()]
                 summary_items = []
                 for item in sorted(matches, key=lambda x: x['rank'])[:3]:
-                    diff_text = self._format_rank_diff(self._find_previous_item(previous_data, item), item['rank'])
+                    diff_text = self._format_rank_diff_en(self._find_previous_item(previous_data, item), item['rank'])
                     summary_items.append({**item, 'diff_text': diff_text})
                 items_by_brand.append({'brand': brand, 'items': summary_items})
 
-        image_path = self._build_image_card('📋 현재 추적 브랜드 요약', items_by_brand, footer_text=f'총 추적 브랜드: {len(brands)}개')
-        caption = f'Amazon Beauty Bestseller 요약 • {len(brands)}개 브랜드'
+        image_path = self._build_image_card('Amazon Beauty Bestseller Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Amazon Beauty Bestseller Summary • {len(brands)} brands'
         return image_path, caption
 
     def build_update_image(self, old_data, new_data):
         brands = self.state.get('brands', [])
         if not brands:
-            items_by_brand = [{'brand': '추적 중인 브랜드가 없습니다.', 'items': []}]
+            items_by_brand = [{'brand': 'No tracked brands.', 'items': []}]
         else:
             items_by_brand = []
             for brand in brands:
@@ -584,12 +603,12 @@ class AmazonBestsellerTracker:
                 matches = [item for item in new_data.get('bestsellers', []) if brand_lower in item['title'].lower()]
                 summary_items = []
                 for item in sorted(matches, key=lambda x: x['rank'])[:3]:
-                    diff_text = self._format_rank_diff(self._find_previous_item(old_data, item), item['rank'])
+                    diff_text = self._format_rank_diff_en(self._find_previous_item(old_data, item), item['rank'])
                     summary_items.append({**item, 'diff_text': diff_text})
                 items_by_brand.append({'brand': brand, 'items': summary_items})
 
-        image_path = self._build_image_card('📣 Amazon Beauty Bestseller 업데이트', items_by_brand, footer_text=f'총 추적 브랜드: {len(brands)}개')
-        caption = f'Amazon Beauty Bestseller 업데이트 • {len(brands)}개 브랜드'
+        image_path = self._build_image_card('Amazon Beauty Bestseller Update', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Amazon Beauty Bestseller Update • {len(brands)} brands'
         return image_path, caption
 
     def broadcast_message(self, text):

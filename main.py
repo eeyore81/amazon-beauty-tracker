@@ -215,25 +215,33 @@ class AmazonBestsellerTracker:
             return '📌 현재 추적 중인 브랜드가 없습니다. /add <브랜드> 로 브랜드를 추가해주세요.'
 
         changes = self.compare_brand_ranks(old_data, new_data)
-        lines = [f"📣 Amazon Beauty Bestseller 업데이트", f"시간: {new_data.get('timestamp', 'N/A')}"]
+        lines = [
+            '📣 Amazon Beauty Bestseller 업데이트',
+            f"시간: {new_data.get('timestamp', 'N/A')}",
+            '────────────────────────',
+        ]
 
         for entry in changes:
             brand = entry['brand']
+            old_rank = entry.get('old_rank')
+            new_rank = entry.get('new_rank')
             if entry['status'] == 'new':
-                lines.append(f"- {brand}: 새로 발견됨, 현재 순위 {entry['new_rank']}")
+                lines.append(f"🟢 {brand}: 새로 진입 → 현재 {new_rank}위")
             elif entry['status'] == 'dropped':
-                lines.append(f"- {brand}: 이전에는 순위 {entry['old_rank']}였으나 현재 목록에서는 제외됨")
+                lines.append(f"⚠️ {brand}: 이전 {old_rank}위 → 현재 목록 없음")
             elif entry['status'] == 'same':
-                lines.append(f"- {brand}: 순위 변동 없음 ({entry['new_rank']})")
+                lines.append(f"➡️ {brand}: {new_rank}위 (변동 없음)")
             elif entry['status'] == 'up':
-                diff = entry['old_rank'] - entry['new_rank']
-                lines.append(f"- {brand}: 순위 상승 {diff}위 ({entry['old_rank']} → {entry['new_rank']})")
+                diff = old_rank - new_rank
+                lines.append(f"🔼 {brand}: {old_rank} → {new_rank} (+{diff}위)")
             elif entry['status'] == 'down':
-                diff = entry['new_rank'] - entry['old_rank']
-                lines.append(f"- {brand}: 순위 하락 {diff}위 ({entry['old_rank']} → {entry['new_rank']})")
+                diff = new_rank - old_rank
+                lines.append(f"🔽 {brand}: {old_rank} → {new_rank} (-{diff}위)")
             else:
-                lines.append(f"- {brand}: 현재 목록에서 찾을 수 없습니다.")
+                lines.append(f"❌ {brand}: 현재 목록에서 찾을 수 없음")
 
+        lines.append('────────────────────────')
+        lines.append(f"총 추적 브랜드: {len(self.state.get('brands', []))}개")
         return '\n'.join(lines)
 
     def build_summary_text(self):
@@ -241,22 +249,49 @@ class AmazonBestsellerTracker:
         if not data or 'bestsellers' not in data:
             return '🔍 아직 수집된 베스트셀러 데이터가 없습니다. 먼저 업데이트를 실행해주세요.'
 
-        lines = [f"📋 현재 추적 브랜드 요약", f"수집 시간: {data.get('timestamp', 'N/A')}\n"]
+        previous_data = self.load_data(self.previous_data_file)
+        changes = self.compare_brand_ranks(previous_data, data)
+
+        lines = [
+            '📋 현재 추적 브랜드 요약',
+            f"수집 시간: {data.get('timestamp', 'N/A')}",
+            '────────────────────────',
+        ]
         brands = self.state.get('brands', [])
         if not brands:
             lines.append('추적 중인 브랜드가 없습니다. /add <브랜드> 로 브랜드를 추가하세요.')
             return '\n'.join(lines)
 
-        for brand in brands:
-            brand_lower = brand.lower()
-            matches = [item for item in data['bestsellers'] if brand_lower in item['title'].lower()]
-            if matches:
-                rank = min(item['rank'] for item in matches)
-                lines.append(f"- {brand}: 현재 순위 {rank} (상품 예: {matches[0]['title'][:50]})")
-            else:
-                lines.append(f"- {brand}: 현재 순위 목록에 없음")
+        for entry in changes:
+            brand = entry['brand']
+            status = entry['status']
+            old_rank = entry.get('old_rank')
+            new_rank = entry.get('new_rank')
+            example = ''
+            if data and 'bestsellers' in data:
+                brand_lower = brand.lower()
+                matches = [item for item in data['bestsellers'] if brand_lower in item['title'].lower()]
+                if matches:
+                    example = f" (예: {matches[0]['title'][:40]})"
 
-        lines.append('\n추적 중인 브랜드: ' + ', '.join(brands))
+            if status == 'new':
+                lines.append(f"🟢 {brand}: 현재 {new_rank}위 (새로 진입){example}")
+            elif status == 'dropped':
+                lines.append(f"⚠️ {brand}: 이전 {old_rank}위 → 현재 목록 없음")
+            elif status == 'same':
+                lines.append(f"➡️ {brand}: 현재 {new_rank}위 (변동 없음){example}")
+            elif status == 'up':
+                diff = old_rank - new_rank
+                lines.append(f"🔼 {brand}: {old_rank} → {new_rank} (+{diff}위){example}")
+            elif status == 'down':
+                diff = new_rank - old_rank
+                lines.append(f"🔽 {brand}: {old_rank} → {new_rank} (-{diff}위){example}")
+            else:
+                lines.append(f"❌ {brand}: 현재 목록에 없음")
+
+        lines.append('────────────────────────')
+        lines.append(f"총 추적 브랜드: {len(brands)}개")
+        lines.append('목록 보기: /list    요약 보기: /summary')
         return '\n'.join(lines)
 
     def get_telegram_token(self):

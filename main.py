@@ -112,7 +112,7 @@ class AmazonBestsellerTracker:
                 items = []
                 seen_keys = set()
                 page_urls = [self.config['url']]
-                for page_number in range(2, 5):
+                for page_number in range(2, 7):
                     custom_page_url = self.config.get(f'page_{page_number}_url')
                     if custom_page_url:
                         page_urls.append(custom_page_url)
@@ -124,13 +124,14 @@ class AmazonBestsellerTracker:
                     page.goto(page_url, timeout=45000, wait_until='networkidle')
                     page.wait_for_timeout(self.config.get('browser_initial_wait', 4) * 1000)
 
-                    scroll_steps = self.config.get('browser_scroll_steps', 8)
+                    scroll_steps = self.config.get('browser_scroll_steps', 10)
                     scroll_delay = self.config.get('browser_scroll_delay', 2)
-                    for _ in range(scroll_steps):
-                        page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+                    for i in range(scroll_steps):
+                        page.evaluate(f'window.scrollTo(0, document.body.scrollHeight * {(i + 1) / scroll_steps});')
                         page.wait_for_timeout(scroll_delay * 1000)
 
-                    page.wait_for_timeout(1500)
+                    page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+                    page.wait_for_timeout(2000)
                     html = page.content()
                     soup = BeautifulSoup(html, 'lxml')
                     page_items = self._parse_bestseller_items(soup)
@@ -464,7 +465,7 @@ class AmazonBestsellerTracker:
                 continue
         return ImageFont.load_default()
 
-    def _fetch_remote_image(self, url, size=(220, 220)):
+    def _fetch_remote_image(self, url, size=(320, 320)):
         if not url:
             return None
         try:
@@ -501,72 +502,72 @@ class AmazonBestsellerTracker:
         return text[:max_chars - 1].rstrip() + '…'
 
     def _build_image_card(self, headline, items_by_brand, footer_text=None):
-        width = 1600
-        padding = 60
-        title_font = self._get_font(70)
-        brand_font = self._get_font(46)
-        item_title_font = self._get_font(40)
-        item_meta_font = self._get_font(34)
-        small_font = self._get_font(28)
+        width = 2000
+        padding = 80
+        title_font = self._get_font(100)
+        brand_font = self._get_font(62)
+        item_title_font = self._get_font(54)
+        item_meta_font = self._get_font(44)
+        small_font = self._get_font(34)
 
         y = padding
-        height = padding + 220
+        height = padding + 260
 
         for entry in items_by_brand:
-            block_height = 240
+            block_height = 280
             if entry['items']:
-                block_height += len(entry['items']) * 200
-            height += block_height + 40
+                block_height += len(entry['items']) * 240
+            height += block_height + 50
 
         if footer_text:
-            height += 90
+            height += 110
 
         image = Image.new('RGB', (width, height), color=(255, 255, 255))
         draw = ImageDraw.Draw(image)
         draw.text((padding, y), headline, fill=(20, 20, 20), font=title_font)
-        y += 110
+        y += 140
         draw.text((padding, y), datetime.now().strftime('Generated: %Y-%m-%d %H:%M:%S'), fill=(100, 100, 100), font=item_meta_font)
+        y += 60
+        draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=4)
         y += 50
-        draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=3)
-        y += 40
 
         for entry in items_by_brand:
-            draw.rectangle((padding - 12, y - 12, width - padding + 12, y + 210), fill=(245, 245, 248), outline=(210, 210, 215), width=1)
+            draw.rectangle((padding - 14, y - 14, width - padding + 14, y + 250), fill=(245, 245, 248), outline=(210, 210, 215), width=1)
             draw.text((padding, y), f"{entry['brand']} ({len(entry['items'])})", fill=(15, 15, 15), font=brand_font)
-            y += 65
+            y += 80
 
             if not entry['items']:
                 draw.text((padding, y), 'No matched products found.', fill=(110, 110, 110), font=item_meta_font)
-                y += 110
+                y += 130
                 continue
 
             for item in entry['items']:
-                thumb = self._fetch_remote_image(item.get('image'), size=(220, 220))
+                thumb = self._fetch_remote_image(item.get('image'), size=(280, 280))
                 if thumb:
                     image.paste(thumb, (padding, y))
                 else:
-                    draw.rectangle((padding, y, padding + 220, y + 220), fill=(235, 235, 235), outline=(190, 190, 190), width=1)
-                    draw.text((padding + 28, y + 88), 'No Image', fill=(130, 130, 130), font=small_font)
+                    draw.rectangle((padding, y, padding + 280, y + 280), fill=(235, 235, 235), outline=(190, 190, 190), width=1)
+                    draw.text((padding + 32, y + 110), 'No Image', fill=(130, 130, 130), font=small_font)
 
-                text_x = padding + 250
-                title = self._truncate_text(item.get('title', ''), 24)
+                text_x = padding + 320
+                title = self._truncate_text(item.get('title', ''), 20)
                 title_lines = self._wrap_text(f"#{item['rank']} {title}", item_title_font, width - text_x - padding, draw)
                 for line in title_lines[:2]:
                     draw.text((text_x, y), line, fill=(25, 25, 25), font=item_title_font)
-                    y += 44
+                    y += 50
 
                 diff_text = item.get('diff_text', '')
                 draw.text((text_x, y), diff_text, fill=(90, 90, 90), font=item_meta_font)
-                y += 40
+                y += 48
                 meta_text = f"{item.get('price', 'N/A')} / {item.get('rating', 'N/A')} / {item.get('reviews', 'N/A')}"
                 draw.text((text_x, y), meta_text, fill=(90, 90, 90), font=small_font)
-                y += 70
+                y += 90
 
-            y += 20
+            y += 30
 
         if footer_text:
-            draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=3)
-            y += 30
+            draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=4)
+            y += 40
             draw.text((padding, y), footer_text, fill=(80, 80, 80), font=small_font)
 
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')

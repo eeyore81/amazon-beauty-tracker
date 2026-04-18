@@ -7,6 +7,6 @@
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "use_browser": false,
   "browser_initial_wait": 4,
-  "browser_scroll_steps": 6,
+  "browser_scroll_steps": 8,
   "browser_scroll_delay": 2
 }

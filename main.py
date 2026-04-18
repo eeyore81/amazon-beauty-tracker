@@ -300,6 +300,7 @@ class AmazonBestsellerTracker:
         if action in ['add', '추가']:
             if not argument:
                 return self.send_telegram_message(chat_id, '사용법: /add <브랜드> 또는 추가 <브랜드>')
+            self.ensure_data_available()
             added = self.add_brand(argument)
             if added:
                 return self.send_telegram_message(chat_id, f"✅ 브랜드 '{argument}' 이(가) 추적 목록에 추가되었습니다.")
@@ -318,6 +319,7 @@ class AmazonBestsellerTracker:
             return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 시작했습니다. 완료되면 추적 중인 브랜드 순위 변동을 전송합니다.')
 
         if action in ['summary', '요약']:
+            self.ensure_data_available()
             return self.send_telegram_message(chat_id, self.build_summary_text())
 
         if action in ['help', '도움', '도움말']:
@@ -342,6 +344,24 @@ class AmazonBestsellerTracker:
             '/list 또는 목록 - 추적 중인 브랜드 보기\n'
             '/help 또는 도움 - 도움말 보기'
         )
+
+    def ensure_data_available(self):
+        data = self.load_data()
+        if data and data.get('bestsellers'):
+            return data
+
+        logging.info('No bestseller data available. Running update now...')
+        self.update()
+        return self.load_data()
+
+    def ensure_data_available(self):
+        data = self.load_data()
+        if data and data.get('bestsellers'):
+            return data
+
+        logging.info('No bestseller data available. Running update now...')
+        self.update()
+        return self.load_data()
 
     def update(self):
         logging.info('Updating bestseller data...')

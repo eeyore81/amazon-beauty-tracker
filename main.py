@@ -526,11 +526,40 @@ class AmazonBestsellerTracker:
             'image': image,
         }
 
-    def _extract_image_url(self, item):
-        image_elem = item.select_one('img.s-image') or item.select_one('img[alt]') or item.select_one('img')
+    def _normalize_image_url(self, url):
+        if not url:
+            return None
+        url = url.strip()
+        if url.startswith('//'):
+            return f'https:{url}'
+        if url.startswith('/'):
+            return f'https://www.amazon.com{url}'
+        return url
+
+    def _get_image_src(self, image_elem):
         if not image_elem:
             return None
-        return image_elem.get('src') or image_elem.get('data-src') or image_elem.get('data-old-hires')
+
+        for attr in ('src', 'data-src', 'data-old-hires', 'data-srcset', 'srcset', 'data-image-source'):
+            value = image_elem.get(attr)
+            if not value:
+                continue
+
+            if attr in ('srcset', 'data-srcset') and ',' in value:
+                for candidate in [part.strip().split(' ')[0] for part in value.split(',') if part.strip()]:
+                    normalized = self._normalize_image_url(candidate)
+                    if normalized:
+                        return normalized
+            else:
+                normalized = self._normalize_image_url(value)
+                if normalized:
+                    return normalized
+
+        return None
+
+    def _extract_image_url(self, item):
+        image_elem = item.select_one('img.s-image') or item.select_one('img[alt]') or item.select_one('img')
+        return self._get_image_src(image_elem)
 
     def save_data(self, items, path=None, previous_path=None, data_key='bestsellers'):
         target_file = self.data_file if path is None else Path(path)
@@ -808,6 +837,7 @@ class AmazonBestsellerTracker:
         if not url:
             return None
         try:
+            url = self._normalize_image_url(url)
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             image = Image.open(io.BytesIO(response.content)).convert('RGB')
@@ -998,8 +1028,8 @@ class AmazonBestsellerTracker:
                     summary_items.append({**item, 'diff_text': diff_text})
                 items_by_brand.append({'brand': brand, 'items': summary_items})
 
-        image_path = self._build_image_card('Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
-        caption = f'Summary • {len(brands)} brands'
+        image_path = self._build_image_card('Amazon Beauty Bestseller Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Amazon Beauty Bestseller Summary • {len(brands)} brands'
         return image_path, caption
 
     def build_movers_summary_image(self, data, previous_data):
@@ -1016,8 +1046,8 @@ class AmazonBestsellerTracker:
                     summary_items.append({**item, 'diff_text': diff_text})
                 items_by_brand.append({'brand': brand, 'items': summary_items})
 
-        image_path = self._build_image_card('Move and Shakers Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
-        caption = f'Move and Shakers Summary • {len(brands)} brands'
+        image_path = self._build_image_card('Amazon Beauty Move and Shakers Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Amazon Beauty Move and Shakers Summary • {len(brands)} brands'
         return image_path, caption
 
     def build_update_image(self, old_data, new_data):

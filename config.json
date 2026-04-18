@@ -6,7 +6,8 @@
   "state_file": "data/state.json",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "use_browser": false,
+  "browser_max_pages": 6,
   "browser_initial_wait": 4,
-  "browser_scroll_steps": 10,
+  "browser_scroll_steps": 12,
   "browser_scroll_delay": 2
 }

@@ -16,6 +16,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 import threading
+import html
 import requests
 from bs4 import BeautifulSoup
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -36,6 +37,7 @@ class AmazonBestsellerTracker:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         self.scheduler = BackgroundScheduler()
         self.update_lock = threading.Lock()
+        self.asin_detail_cache = {}
         self.state = self.load_state()
 
     def _load_config(self, config_file):
@@ -60,17 +62,25 @@ class AmazonBestsellerTracker:
             return self.fetch_bestsellers_with_browser()
 
         try:
-            headers = {'User-Agent': self.config['user_agent']}
+            headers = {
+                'User-Agent': self.config['user_agent'],
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.amazon.com/',
+            }
+            session = requests.Session()
+            session.headers.update(headers)
             url = self.config['url']
             all_items = []
             seen_keys = set()
             page_count = 0
 
             while url and len(all_items) < 100 and page_count < 5:
-                response = requests.get(url, headers=headers, timeout=15)
+                response = session.get(url, timeout=20)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.content, 'lxml')
                 page_items = self._parse_bestseller_items(soup)
+                page_items = self._enrich_page_items_from_client_recs(soup, page_items, session)
 
                 for item in page_items:
                     key = item.get('asin') or item['title'].strip().lower()
@@ -93,6 +103,144 @@ class AmazonBestsellerTracker:
             logging.error(f"Error fetching bestsellers: {e}")
             return None
 
+    def _enrich_page_items_from_client_recs(self, soup, page_items, session):
+        rank_pairs = self._extract_client_recs_ranks(soup)
+        if not rank_pairs:
+            return page_items
+
+        by_asin = {}
+        for item in page_items:
+            asin = item.get('asin')
+            if asin:
+                by_asin[asin] = item
+
+        enriched = []
+        for asin, rank in rank_pairs:
+            existing = by_asin.get(asin)
+            if existing:
+                existing['rank'] = rank
+                enriched.append(existing)
+                continue
+
+            details = self._fetch_item_details_from_asin(asin, session)
+            if details:
+                details['rank'] = rank
+                details['asin'] = asin
+                enriched.append(details)
+            else:
+                enriched.append(
+                    {
+                        'rank': rank,
+                        'title': f'ASIN {asin}',
+                        'price': 'N/A',
+                        'rating': 'N/A',
+                        'reviews': 'N/A',
+                        'asin': asin,
+                        'image': None,
+                    }
+                )
+
+        seen = set()
+        deduped = []
+        for item in sorted(enriched, key=lambda x: x['rank']):
+            asin = item.get('asin')
+            if asin in seen:
+                continue
+            seen.add(asin)
+            deduped.append(item)
+        return deduped
+
+    def _extract_client_recs_ranks(self, soup):
+        rec_nodes = soup.select('[data-client-recs-list]')
+        if not rec_nodes:
+            return []
+
+        raw = max((node.get('data-client-recs-list') or '' for node in rec_nodes), key=len, default='')
+        if not raw:
+            return []
+
+        try:
+            data = json.loads(html.unescape(raw))
+        except Exception:
+            return []
+
+        ranks = []
+        for entry in data:
+            asin = entry.get('id')
+            meta = entry.get('metadataMap') or {}
+            rank_text = meta.get('render.zg.rank')
+            if not asin or not rank_text:
+                continue
+            try:
+                rank = int(str(rank_text).strip())
+            except ValueError:
+                continue
+            ranks.append((asin, rank))
+
+        ranks.sort(key=lambda x: x[1])
+        return ranks
+
+    def _fetch_item_details_from_asin(self, asin, session):
+        cached = self.asin_detail_cache.get(asin)
+        if cached:
+            return dict(cached)
+
+        url = f'https://www.amazon.com/dp/{asin}'
+        try:
+            response = session.get(url, timeout=20)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'lxml')
+
+            title_elem = soup.select_one('#productTitle') or soup.select_one('meta[property="og:title"]')
+            if not title_elem:
+                return None
+            if title_elem.name == 'meta':
+                title = (title_elem.get('content') or '').strip()
+            else:
+                title = title_elem.get_text(' ', strip=True)
+            if not title:
+                return None
+
+            image_elem = soup.select_one('#landingImage') or soup.select_one('meta[property="og:image"]')
+            if image_elem and image_elem.name == 'meta':
+                image = image_elem.get('content')
+            else:
+                image = image_elem.get('src') if image_elem else None
+
+            price_elem = (
+                soup.select_one('span.a-price span.a-offscreen')
+                or soup.select_one('#corePrice_feature_div span.a-offscreen')
+                or soup.select_one('meta[property="product:price:amount"]')
+            )
+            if price_elem and price_elem.name == 'meta':
+                price = price_elem.get('content', 'N/A')
+            else:
+                price = price_elem.get_text(strip=True) if price_elem else 'N/A'
+
+            rating_elem = soup.select_one('#acrPopover') or soup.select_one('span.a-icon-alt')
+            rating = (
+                rating_elem.get('title', '').strip()
+                or rating_elem.get_text(strip=True)
+                if rating_elem
+                else 'N/A'
+            )
+            rating = rating or 'N/A'
+
+            reviews_elem = soup.select_one('#acrCustomerReviewText')
+            reviews = reviews_elem.get_text(strip=True) if reviews_elem else 'N/A'
+
+            details = {
+                'title': title,
+                'price': price,
+                'rating': rating,
+                'reviews': reviews,
+                'image': image,
+            }
+            self.asin_detail_cache[asin] = details
+            return dict(details)
+        except Exception:
+            return None
+
     def fetch_bestsellers_with_browser(self):
         try:
             from playwright.sync_api import sync_playwright
@@ -111,27 +259,16 @@ class AmazonBestsellerTracker:
 
                 items = []
                 seen_keys = set()
-                page_urls = [self.config['url']]
-                for page_number in range(2, 7):
-                    custom_page_url = self.config.get(f'page_{page_number}_url')
-                    if custom_page_url:
-                        page_urls.append(custom_page_url)
-                    else:
-                        page_urls.append(f"{self.config['url']}?pg={page_number}")
+                current_url = self.config['url']
+                page_index = 1
+                max_pages = self.config.get('browser_max_pages', 6)
 
-                for page_index, page_url in enumerate(page_urls, start=1):
-                    logging.info(f'Browser loading page {page_index}: {page_url}')
-                    page.goto(page_url, timeout=45000, wait_until='networkidle')
+                while current_url and len(items) < 100 and page_index <= max_pages:
+                    logging.info(f'Browser loading page {page_index}: {current_url}')
+                    page.goto(current_url, timeout=45000, wait_until='networkidle')
                     page.wait_for_timeout(self.config.get('browser_initial_wait', 4) * 1000)
 
-                    scroll_steps = self.config.get('browser_scroll_steps', 10)
-                    scroll_delay = self.config.get('browser_scroll_delay', 2)
-                    for i in range(scroll_steps):
-                        page.evaluate(f'window.scrollTo(0, document.body.scrollHeight * {(i + 1) / scroll_steps});')
-                        page.wait_for_timeout(scroll_delay * 1000)
-
-                    page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
-                    page.wait_for_timeout(2000)
+                    self._browser_scroll_page(page)
                     html = page.content()
                     soup = BeautifulSoup(html, 'lxml')
                     page_items = self._parse_bestseller_items(soup)
@@ -146,12 +283,45 @@ class AmazonBestsellerTracker:
                     if len(items) >= 100:
                         break
 
+                    next_page_href = self._find_next_page_link(soup)
+                    if not next_page_href:
+                        break
+                    current_url = requests.compat.urljoin(current_url, next_page_href)
+                    page_index += 1
+
                 context.close()
                 browser.close()
                 return items[:100]
         except Exception as e:
             logging.error(f"Error fetching bestsellers with browser automation: {e}")
             return None
+
+    def _browser_scroll_page(self, page):
+        scroll_steps = self.config.get('browser_scroll_steps', 12)
+        scroll_delay = self.config.get('browser_scroll_delay', 2)
+        for _ in range(scroll_steps):
+            page.evaluate('window.scrollBy(0, window.innerHeight);')
+            page.wait_for_timeout(int(scroll_delay * 1000))
+        page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+        page.wait_for_timeout(3000)
+        try:
+            page.wait_for_load_state('networkidle', timeout=15000)
+        except Exception:
+            pass
+
+    def _find_next_page_link(self, soup):
+        next_selectors = [
+            'li.a-last a',
+            'a#pagnNextLink',
+            'a.a-last',
+            'a[href*="?pg="]',
+            'a[href*="ref_=zg_bs_pg"]',
+        ]
+        for selector in next_selectors:
+            element = soup.select_one(selector)
+            if element and element.get('href'):
+                return element['href']
+        return None
 
     def _parse_bestseller_items(self, soup):
         containers = soup.select('div.a-cardui._cDEzb_grid-cell_1uMOS.expandableGrid.p13n-grid-content')
@@ -502,73 +672,143 @@ class AmazonBestsellerTracker:
         return text[:max_chars - 1].rstrip() + '…'
 
     def _build_image_card(self, headline, items_by_brand, footer_text=None):
-        width = 2000
-        padding = 80
-        title_font = self._get_font(100)
-        brand_font = self._get_font(62)
-        item_title_font = self._get_font(54)
-        item_meta_font = self._get_font(44)
-        small_font = self._get_font(34)
+        # Mobile-first Telegram card layout (1080px wide portrait image).
+        width = 1080
+        padding = 44
+        section_gap = 24
+        item_gap = 16
+        header_height = 170
+        brand_header_height = 74
+        item_row_height = 206
+        thumb_size = 176
 
-        y = padding
-        height = padding + 260
+        title_font = self._get_font(56)
+        subtitle_font = self._get_font(28)
+        brand_font = self._get_font(42)
+        item_title_font = self._get_font(34)
+        item_meta_font = self._get_font(28)
+        small_font = self._get_font(24)
 
+        total_height = padding + header_height
         for entry in items_by_brand:
-            block_height = 280
+            section_height = brand_header_height + 26
             if entry['items']:
-                block_height += len(entry['items']) * 240
-            height += block_height + 50
+                section_height += len(entry['items']) * item_row_height + (len(entry['items']) - 1) * item_gap
+            else:
+                section_height += 72
+            total_height += section_height + section_gap
 
         if footer_text:
-            height += 110
+            total_height += 72
+        total_height += padding
 
-        image = Image.new('RGB', (width, height), color=(255, 255, 255))
+        image = Image.new('RGB', (width, total_height), color=(245, 248, 252))
         draw = ImageDraw.Draw(image)
-        draw.text((padding, y), headline, fill=(20, 20, 20), font=title_font)
-        y += 140
-        draw.text((padding, y), datetime.now().strftime('Generated: %Y-%m-%d %H:%M:%S'), fill=(100, 100, 100), font=item_meta_font)
-        y += 60
-        draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=4)
-        y += 50
+
+        # Soft vertical gradient background to improve card contrast on mobile screens.
+        for i in range(total_height):
+            ratio = i / max(total_height - 1, 1)
+            r = int(245 - ratio * 14)
+            g = int(248 - ratio * 10)
+            b = int(252 - ratio * 6)
+            draw.line((0, i, width, i), fill=(r, g, b))
+
+        y = padding
+        draw.rounded_rectangle(
+            (padding, y, width - padding, y + header_height),
+            radius=30,
+            fill=(255, 255, 255),
+            outline=(220, 227, 236),
+            width=2,
+        )
+        draw.text((padding + 28, y + 24), headline, fill=(20, 28, 38), font=title_font)
+        draw.text(
+            (padding + 28, y + 98),
+            datetime.now().strftime('Generated: %Y-%m-%d %H:%M:%S'),
+            fill=(104, 116, 134),
+            font=subtitle_font,
+        )
+        y += header_height + section_gap
 
         for entry in items_by_brand:
-            draw.rectangle((padding - 14, y - 14, width - padding + 14, y + 250), fill=(245, 245, 248), outline=(210, 210, 215), width=1)
-            draw.text((padding, y), f"{entry['brand']} ({len(entry['items'])})", fill=(15, 15, 15), font=brand_font)
-            y += 80
+            section_top = y
+            section_height = brand_header_height + 26
+            if entry['items']:
+                section_height += len(entry['items']) * item_row_height + (len(entry['items']) - 1) * item_gap
+            else:
+                section_height += 72
 
+            draw.rounded_rectangle(
+                (padding, section_top, width - padding, section_top + section_height),
+                radius=30,
+                fill=(255, 255, 255),
+                outline=(220, 227, 236),
+                width=2,
+            )
+            draw.text(
+                (padding + 24, section_top + 18),
+                f"{entry['brand']} ({len(entry['items'])})",
+                fill=(24, 35, 49),
+                font=brand_font,
+            )
+
+            row_y = section_top + brand_header_height
             if not entry['items']:
-                draw.text((padding, y), 'No matched products found.', fill=(110, 110, 110), font=item_meta_font)
-                y += 130
+                draw.text((padding + 24, row_y + 10), 'No matched products found.', fill=(119, 129, 144), font=item_meta_font)
+                y = section_top + section_height + section_gap
                 continue
 
             for item in entry['items']:
-                thumb = self._fetch_remote_image(item.get('image'), size=(280, 280))
-                if thumb:
-                    image.paste(thumb, (padding, y))
-                else:
-                    draw.rectangle((padding, y, padding + 280, y + 280), fill=(235, 235, 235), outline=(190, 190, 190), width=1)
-                    draw.text((padding + 32, y + 110), 'No Image', fill=(130, 130, 130), font=small_font)
+                row_top = row_y
+                row_bottom = row_top + item_row_height
+                row_left = padding + 18
+                row_right = width - padding - 18
 
-                text_x = padding + 320
+                draw.rounded_rectangle(
+                    (row_left, row_top, row_right, row_bottom),
+                    radius=24,
+                    fill=(249, 252, 255),
+                    outline=(229, 236, 245),
+                    width=1,
+                )
+
+                thumb_x = row_left + 16
+                thumb_y = row_top + 15
+                thumb = self._fetch_remote_image(item.get('image'), size=(thumb_size, thumb_size))
+                if thumb:
+                    image.paste(thumb, (thumb_x, thumb_y))
+                else:
+                    draw.rounded_rectangle(
+                        (thumb_x, thumb_y, thumb_x + thumb_size, thumb_y + thumb_size),
+                        radius=18,
+                        fill=(235, 241, 247),
+                        outline=(205, 216, 229),
+                        width=1,
+                    )
+                    draw.text((thumb_x + 24, thumb_y + 72), 'No Image', fill=(134, 144, 158), font=small_font)
+
+                text_x = thumb_x + thumb_size + 20
+                text_width = row_right - text_x - 16
+
                 title = self._truncate_text(item.get('title', ''), 20)
-                title_lines = self._wrap_text(f"#{item['rank']} {title}", item_title_font, width - text_x - padding, draw)
-                for line in title_lines[:2]:
-                    draw.text((text_x, y), line, fill=(25, 25, 25), font=item_title_font)
-                    y += 50
+                title_lines = self._wrap_text(f"#{item['rank']} {title}", item_title_font, text_width, draw)
+                draw.text((text_x, row_top + 20), title_lines[0] if title_lines else f"#{item['rank']}", fill=(28, 37, 52), font=item_title_font)
+                if len(title_lines) > 1:
+                    draw.text((text_x, row_top + 64), title_lines[1], fill=(28, 37, 52), font=item_title_font)
 
                 diff_text = item.get('diff_text', '')
-                draw.text((text_x, y), diff_text, fill=(90, 90, 90), font=item_meta_font)
-                y += 48
-                meta_text = f"{item.get('price', 'N/A')} / {item.get('rating', 'N/A')} / {item.get('reviews', 'N/A')}"
-                draw.text((text_x, y), meta_text, fill=(90, 90, 90), font=small_font)
-                y += 90
+                draw.text((text_x, row_top + 112), diff_text, fill=(67, 98, 132), font=item_meta_font)
 
-            y += 30
+                meta_text = f"{item.get('price', 'N/A')}  |  {item.get('rating', 'N/A')}  |  {item.get('reviews', 'N/A')}"
+                meta_lines = self._wrap_text(meta_text, small_font, text_width, draw)
+                draw.text((text_x, row_top + 148), meta_lines[0] if meta_lines else meta_text, fill=(111, 123, 140), font=small_font)
+
+                row_y += item_row_height + item_gap
+
+            y = section_top + section_height + section_gap
 
         if footer_text:
-            draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=4)
-            y += 40
-            draw.text((padding, y), footer_text, fill=(80, 80, 80), font=small_font)
+            draw.text((padding + 8, y + 4), footer_text, fill=(112, 123, 140), font=small_font)
 
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
         image.save(output_file.name, format='PNG')

@@ -51,68 +51,98 @@ class AmazonBestsellerTracker:
     def fetch_bestsellers(self):
         try:
             headers = {'User-Agent': self.config['user_agent']}
-            response = requests.get(self.config['url'], headers=headers, timeout=15)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, 'lxml')
-            return self._parse_bestseller_items(soup)
+            url = self.config['url']
+            all_items = []
+            seen_keys = set()
+            page_count = 0
+
+            while url and len(all_items) < 100 and page_count < 5:
+                response = requests.get(url, headers=headers, timeout=15)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.content, 'lxml')
+                page_items = self._parse_bestseller_items(soup)
+
+                for item in page_items:
+                    key = item.get('asin') or item['title'].strip().lower()
+                    if key in seen_keys:
+                        continue
+                    seen_keys.add(key)
+                    all_items.append(item)
+                    if len(all_items) >= 100:
+                        break
+
+                next_link = soup.select_one('li.a-last a, a#pagnNextLink, a.a-last')
+                if next_link and next_link.get('href'):
+                    url = requests.compat.urljoin(url, next_link['href'])
+                    page_count += 1
+                else:
+                    break
+
+            return all_items[:100]
         except requests.RequestException as e:
             logging.error(f"Error fetching bestsellers: {e}")
             return None
 
     def _parse_bestseller_items(self, soup):
-        items = soup.select(
-            'div.zg-grid-general-faceout, li.zg-item-immersion, div.p13n-sc-uncoverable-faceout, div.s-result-item, div.zg_itemWrapper'
+        containers = soup.select(
+            'ol#zg-ordered-list li, div.zg-grid-general-faceout, li.zg-item-immersion, div.p13n-sc-uncoverable-faceout, div.s-result-item, div.zg_itemWrapper'
         )
-        if not items:
-            items = soup.find_all('div', class_='s-result-item')
 
         bestsellers = []
-        for idx, item in enumerate(items, 1):
-            rank = None
-            rank_elem = item.select_one('span.zg-badge-text, span.a-badge-text, span.zg-badge-text')
-            if rank_elem:
-                rank_text = rank_elem.get_text(strip=True).replace('#', '').strip()
-                if rank_text.isdigit():
-                    rank = int(rank_text)
-            if rank is None:
-                rank = idx
-
-            title = None
-            title_elem = item.select_one(
-                'div.p13n-sc-truncate, div.p13n-sc-truncate-desktop-type2, span.a-size-medium, h2, img'
-            )
-            if title_elem:
-                if title_elem.name == 'img':
-                    title = title_elem.get('alt', '').strip()
-                else:
-                    title = title_elem.get_text(strip=True)
-            if not title:
-                alt = item.find('img')
-                title = alt.get('alt', '').strip() if alt else None
-            if not title:
+        for idx, item in enumerate(containers, 1):
+            parsed = self._extract_item_info(item, idx)
+            if not parsed:
                 continue
-
-            price_elem = item.select_one('span.p13n-sc-price, span.a-price-whole, span.a-offscreen')
-            price = price_elem.get_text(strip=True) if price_elem else 'N/A'
-
-            rating_elem = item.select_one('span.a-icon-alt')
-            rating = rating_elem.get_text(strip=True) if rating_elem else 'N/A'
-
-            reviews_elem = item.select_one('a.a-size-small.a-link-normal') or item.select_one('span.a-size-small')
-            reviews = reviews_elem.get_text(strip=True) if reviews_elem else 'N/A'
-
-            bestsellers.append({
-                'rank': rank,
-                'title': title,
-                'price': price,
-                'rating': rating,
-                'reviews': reviews,
-            })
-
+            bestsellers.append(parsed)
             if len(bestsellers) >= 100:
                 break
 
         return bestsellers
+
+    def _extract_item_info(self, item, default_rank):
+        asin = item.get('data-asin') or item.select_one('[data-asin]') and item.select_one('[data-asin]').get('data-asin')
+
+        rank = None
+        rank_elem = item.select_one('span.zg-badge-text, span.a-badge-text, span.zg-badge-text, span.a-list-item, span._cDEzb_p13n-sc-price')
+        if rank_elem:
+            rank_text = rank_elem.get_text(strip=True).replace('#', '').strip()
+            if rank_text.isdigit():
+                rank = int(rank_text)
+        if rank is None:
+            rank = default_rank
+
+        title = None
+        title_elem = item.select_one(
+            'img[alt], div.p13n-sc-truncate, div.p13n-sc-truncate-desktop-type2, span.a-size-medium, h2, a.a-link-normal > span, span.a-size-base-plus'
+        )
+        if title_elem:
+            if title_elem.name == 'img':
+                title = title_elem.get('alt', '').strip()
+            else:
+                title = title_elem.get_text(strip=True)
+        if not title:
+            alt = item.find('img')
+            title = alt.get('alt', '').strip() if alt else None
+        if not title:
+            return None
+
+        price_elem = item.select_one('span.p13n-sc-price, span.a-price-whole, span.a-offscreen, span.a-color-price')
+        price = price_elem.get_text(strip=True) if price_elem else 'N/A'
+
+        rating_elem = item.select_one('span.a-icon-alt, i.a-icon-star-small span')
+        rating = rating_elem.get_text(strip=True) if rating_elem else 'N/A'
+
+        reviews_elem = item.select_one('a.a-size-small.a-link-normal') or item.select_one('span.a-size-small')
+        reviews = reviews_elem.get_text(strip=True) if reviews_elem else 'N/A'
+
+        return {
+            'rank': rank,
+            'title': title,
+            'price': price,
+            'rating': rating,
+            'reviews': reviews,
+            'asin': asin,
+        }
 
     def save_data(self, bestsellers):
         try:

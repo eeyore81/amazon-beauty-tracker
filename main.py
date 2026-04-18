@@ -1083,6 +1083,35 @@ class AmazonBestsellerTracker:
         caption = f'Amazon Beauty Move and Shakers Summary • {len(brands)} brands'
         return image_path, caption
 
+    def build_combined_summary_image(self, bestseller_data, movers_data, previous_bestseller_data, previous_movers_data):
+        brands = self.state.get('brands', [])
+        if not brands:
+            items_by_brand = [{'brand': 'No tracked brands.', 'items': []}]
+        else:
+            categories = []
+
+            bestseller_items = []
+            for brand in brands:
+                matches = [item for item in bestseller_data.get('bestsellers', []) if self._brand_matches_title(brand, item.get('title'))]
+                for item in sorted(matches, key=lambda x: x['rank'])[:3]:
+                    diff_text = self._format_rank_diff_en(self._find_previous_item(previous_bestseller_data, item), item['rank'])
+                    bestseller_items.append({**item, 'diff_text': diff_text, 'brand_name': brand})
+            categories.append({'brand': 'Bestseller', 'items': bestseller_items})
+
+            mover_items = []
+            for brand in brands:
+                matches = [item for item in movers_data.get('movers', []) if self._brand_matches_title(brand, item.get('title'))]
+                for item in sorted(matches, key=lambda x: x['rank'])[:3]:
+                    diff_text = self._format_rank_diff_en(self._find_previous_item(previous_movers_data, item, data_key='movers'), item['rank'])
+                    mover_items.append({**item, 'diff_text': diff_text, 'brand_name': brand})
+            categories.append({'brand': 'Move and Shakers', 'items': mover_items})
+
+            items_by_brand = categories
+
+        image_path = self._build_image_card('Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Summary • {len(brands)} brands'
+        return image_path, caption
+
     def build_update_image(self, old_data, new_data):
         brands = self.state.get('brands', [])
         if not brands:
@@ -1243,17 +1272,8 @@ class AmazonBestsellerTracker:
             sent_any = False
 
             previous_data = self.load_data(self.previous_data_file)
-            image_path, caption = self.build_summary_image(data, previous_data)
-            sent = self.send_telegram_photo(chat_id, image_path, caption)
-            try:
-                os.remove(image_path)
-            except Exception:
-                pass
-            if sent:
-                sent_any = True
-
             previous_movers_data = self.load_data(self.previous_movers_data_file)
-            image_path, caption = self.build_movers_summary_image(movers_data, previous_movers_data)
+            image_path, caption = self.build_combined_summary_image(data, movers_data, previous_data, previous_movers_data)
             sent = self.send_telegram_photo(chat_id, image_path, caption)
             try:
                 os.remove(image_path)

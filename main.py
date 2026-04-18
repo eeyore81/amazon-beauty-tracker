@@ -100,7 +100,7 @@ class AmazonBestsellerTracker:
         return bestsellers
 
     def _extract_item_info(self, item, default_rank):
-        asin = item.get('data-asin') or item.select_one('[data-asin]') and item.select_one('[data-asin]').get('data-asin')
+        asin = item.get('data-asin') or (item.select_one('[data-asin]') and item.select_one('[data-asin]').get('data-asin'))
 
         rank = None
         rank_elem = item.select_one('span.zg-badge-text, span.a-badge-text, span.zg-badge-text, span.a-list-item, span._cDEzb_p13n-sc-price')
@@ -126,6 +126,7 @@ class AmazonBestsellerTracker:
         if not title:
             return None
 
+        image = self._extract_image_url(item)
         price_elem = item.select_one('span.p13n-sc-price, span.a-price-whole, span.a-offscreen, span.a-color-price')
         price = price_elem.get_text(strip=True) if price_elem else 'N/A'
 
@@ -142,7 +143,14 @@ class AmazonBestsellerTracker:
             'rating': rating,
             'reviews': reviews,
             'asin': asin,
+            'image': image,
         }
+
+    def _extract_image_url(self, item):
+        image_elem = item.select_one('img[alt]') or item.select_one('img')
+        if not image_elem:
+            return None
+        return image_elem.get('src') or image_elem.get('data-src') or image_elem.get('data-old-hires')
 
     def save_data(self, bestsellers):
         try:
@@ -214,35 +222,49 @@ class AmazonBestsellerTracker:
         if not self.state.get('brands'):
             return '📌 현재 추적 중인 브랜드가 없습니다. /add <브랜드> 로 브랜드를 추가해주세요.'
 
-        changes = self.compare_brand_ranks(old_data, new_data)
         lines = [
             '📣 Amazon Beauty Bestseller 업데이트',
             f"시간: {new_data.get('timestamp', 'N/A')}",
             '────────────────────────',
         ]
 
-        for entry in changes:
-            brand = entry['brand']
-            old_rank = entry.get('old_rank')
-            new_rank = entry.get('new_rank')
-            if entry['status'] == 'new':
-                lines.append(f"🟢 {brand}: 새로 진입 → 현재 {new_rank}위")
-            elif entry['status'] == 'dropped':
-                lines.append(f"⚠️ {brand}: 이전 {old_rank}위 → 현재 목록 없음")
-            elif entry['status'] == 'same':
-                lines.append(f"➡️ {brand}: {new_rank}위 (변동 없음)")
-            elif entry['status'] == 'up':
-                diff = old_rank - new_rank
-                lines.append(f"🔼 {brand}: {old_rank} → {new_rank} (+{diff}위)")
-            elif entry['status'] == 'down':
-                diff = new_rank - old_rank
-                lines.append(f"🔽 {brand}: {old_rank} → {new_rank} (-{diff}위)")
-            else:
+        for brand in self.state.get('brands', []):
+            brand_lower = brand.lower()
+            current_matches = [item for item in new_data.get('bestsellers', []) if brand_lower in item['title'].lower()]
+            if not current_matches:
                 lines.append(f"❌ {brand}: 현재 목록에서 찾을 수 없음")
+                continue
+
+            lines.append(f"📌 {brand} ({len(current_matches)}개)")
+            for item in sorted(current_matches, key=lambda x: x['rank']):
+                old_item = self._find_previous_item(old_data, item)
+                diff_text = self._format_rank_diff(old_item, item['rank'])
+                lines.append(f"{item['rank']}위 {item['title']} {diff_text}".strip())
+                if item.get('image'):
+                    lines.append(item['image'])
+            lines.append('')
 
         lines.append('────────────────────────')
         lines.append(f"총 추적 브랜드: {len(self.state.get('brands', []))}개")
         return '\n'.join(lines)
+
+    def _find_previous_item(self, old_data, current_item):
+        if not old_data or 'bestsellers' not in old_data:
+            return None
+        current_title = current_item['title'].strip().lower()
+        candidates = [item for item in old_data['bestsellers'] if item['title'].strip().lower() == current_title]
+        return min(candidates, key=lambda x: x['rank']) if candidates else None
+
+    def _format_rank_diff(self, old_item, new_rank):
+        if not old_item:
+            return '(새로 진입)'
+        old_rank = old_item['rank']
+        if old_rank == new_rank:
+            return '(변동 없음)'
+        diff = old_rank - new_rank
+        if diff > 0:
+            return f'(상승: {diff})'
+        return f'(하락: {abs(diff)})'
 
     def build_summary_text(self):
         data = self.load_data()
@@ -250,8 +272,6 @@ class AmazonBestsellerTracker:
             return '🔍 아직 수집된 베스트셀러 데이터가 없습니다. 먼저 업데이트를 실행해주세요.'
 
         previous_data = self.load_data(self.previous_data_file)
-        changes = self.compare_brand_ranks(previous_data, data)
-
         lines = [
             '📋 현재 추적 브랜드 요약',
             f"수집 시간: {data.get('timestamp', 'N/A')}",
@@ -262,32 +282,21 @@ class AmazonBestsellerTracker:
             lines.append('추적 중인 브랜드가 없습니다. /add <브랜드> 로 브랜드를 추가하세요.')
             return '\n'.join(lines)
 
-        for entry in changes:
-            brand = entry['brand']
-            status = entry['status']
-            old_rank = entry.get('old_rank')
-            new_rank = entry.get('new_rank')
-            example = ''
-            if data and 'bestsellers' in data:
-                brand_lower = brand.lower()
-                matches = [item for item in data['bestsellers'] if brand_lower in item['title'].lower()]
-                if matches:
-                    example = f" (예: {matches[0]['title'][:40]})"
-
-            if status == 'new':
-                lines.append(f"🟢 {brand}: 현재 {new_rank}위 (새로 진입){example}")
-            elif status == 'dropped':
-                lines.append(f"⚠️ {brand}: 이전 {old_rank}위 → 현재 목록 없음")
-            elif status == 'same':
-                lines.append(f"➡️ {brand}: 현재 {new_rank}위 (변동 없음){example}")
-            elif status == 'up':
-                diff = old_rank - new_rank
-                lines.append(f"🔼 {brand}: {old_rank} → {new_rank} (+{diff}위){example}")
-            elif status == 'down':
-                diff = new_rank - old_rank
-                lines.append(f"🔽 {brand}: {old_rank} → {new_rank} (-{diff}위){example}")
-            else:
+        for brand in brands:
+            brand_lower = brand.lower()
+            matches = [item for item in data['bestsellers'] if brand_lower in item['title'].lower()]
+            if not matches:
                 lines.append(f"❌ {brand}: 현재 목록에 없음")
+                continue
+
+            lines.append(f"📌 {brand} ({len(matches)}개)")
+            for item in sorted(matches, key=lambda x: x['rank']):
+                old_item = self._find_previous_item(previous_data, item)
+                diff_text = self._format_rank_diff(old_item, item['rank'])
+                lines.append(f"{item['rank']}위 {item['title']} {diff_text}".strip())
+                if item.get('image'):
+                    lines.append(item['image'])
+            lines.append('')
 
         lines.append('────────────────────────')
         lines.append(f"총 추적 브랜드: {len(brands)}개")

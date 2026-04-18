@@ -485,16 +485,24 @@ class AmazonBestsellerTracker:
 
         title = None
         title_elem = item.select_one(
-            'div._cDEzb_p13n-sc-css-line-clamp-3_g3dy1, div.p13n-sc-truncate, div.p13n-sc-truncate-desktop-type2, span.a-size-medium, h2, a.a-link-normal > span, span.a-size-base-plus, img[alt]'
+            'div._cDEzb_p13n-sc-css-line-clamp-3_g3dy1, div.p13n-sc-truncate, div.p13n-sc-truncate-desktop-type2, span.a-size-medium, h2, a.a-link-normal > span, span.a-size-base-plus'
         )
         if title_elem:
-            if title_elem.name == 'img':
-                title = title_elem.get('alt', '').strip()
-            else:
-                title = title_elem.get_text(strip=True)
+            title = title_elem.get_text(strip=True)
+
+        if not title:
+            image_title_elem = item.select_one('img.s-image') or item.select_one('img[alt]')
+            if image_title_elem and image_title_elem.name == 'img':
+                alt_text = image_title_elem.get('alt', '').strip()
+                if alt_text and not (len(alt_text.split()) < 6 and re.search(r'\b(arrow|up|down|increase|decrease|green|red|blue|yellow)\b', alt_text, re.I)):
+                    title = alt_text
+
         if not title:
             alt = item.find('img')
-            title = alt.get('alt', '').strip() if alt else None
+            alt_text = alt.get('alt', '').strip() if alt else None
+            if alt_text and not (len(alt_text.split()) < 6 and re.search(r'\b(arrow|up|down|increase|decrease|green|red|blue|yellow)\b', alt_text, re.I)):
+                title = alt_text
+
         if not title:
             return None
 
@@ -519,7 +527,7 @@ class AmazonBestsellerTracker:
         }
 
     def _extract_image_url(self, item):
-        image_elem = item.select_one('img[alt]') or item.select_one('img')
+        image_elem = item.select_one('img.s-image') or item.select_one('img[alt]') or item.select_one('img')
         if not image_elem:
             return None
         return image_elem.get('src') or image_elem.get('data-src') or image_elem.get('data-old-hires')
@@ -558,13 +566,12 @@ class AmazonBestsellerTracker:
         brands = self.state.get('brands', [])
         results = []
         for brand in brands:
-            brand_lower = brand.lower()
             old_matches = []
             new_matches = []
             if old_data and 'bestsellers' in old_data:
-                old_matches = [item for item in old_data['bestsellers'] if brand_lower in item['title'].lower()]
+                old_matches = [item for item in old_data['bestsellers'] if self._brand_matches_title(brand, item.get('title'))]
             if new_data and 'bestsellers' in new_data:
-                new_matches = [item for item in new_data['bestsellers'] if brand_lower in item['title'].lower()]
+                new_matches = [item for item in new_data['bestsellers'] if self._brand_matches_title(brand, item.get('title'))]
 
             old_rank = min((item['rank'] for item in old_matches), default=None)
             new_rank = min((item['rank'] for item in new_matches), default=None)
@@ -603,8 +610,7 @@ class AmazonBestsellerTracker:
         ]
 
         for brand in self.state.get('brands', []):
-            brand_lower = brand.lower()
-            current_matches = [item for item in new_data.get('bestsellers', []) if brand_lower in item['title'].lower()]
+            current_matches = [item for item in new_data.get('bestsellers', []) if self._brand_matches_title(brand, item.get('title'))]
             if not current_matches:
                 lines.append(f"❌ {brand}: 현재 목록에서 찾을 수 없음")
                 continue
@@ -628,6 +634,11 @@ class AmazonBestsellerTracker:
         current_title = current_item['title'].strip().lower()
         candidates = [item for item in old_data[data_key] if item['title'].strip().lower() == current_title]
         return min(candidates, key=lambda x: x['rank']) if candidates else None
+
+    def _brand_matches_title(self, brand, title):
+        if not brand or not title:
+            return False
+        return brand.strip().lower() in title.strip().lower()
 
     def _format_rank_diff(self, old_item, new_rank):
         if not old_item:
@@ -668,8 +679,7 @@ class AmazonBestsellerTracker:
             return '\n'.join(lines)
 
         for brand in brands:
-            brand_lower = brand.lower()
-            matches = [item for item in data['bestsellers'] if brand_lower in item['title'].lower()]
+            matches = [item for item in data['bestsellers'] if self._brand_matches_title(brand, item.get('title'))]
             if not matches:
                 lines.append(f"❌ {brand}: 현재 목록에 없음")
                 continue
@@ -705,8 +715,7 @@ class AmazonBestsellerTracker:
             return '\n'.join(lines)
 
         for brand in brands:
-            brand_lower = brand.lower()
-            matches = [item for item in data['movers'] if brand_lower in item['title'].lower()]
+            matches = [item for item in data['movers'] if self._brand_matches_title(brand, item.get('title'))]
             if not matches:
                 lines.append(f"❌ {brand}: 현재 목록에 없음")
                 continue
@@ -982,8 +991,7 @@ class AmazonBestsellerTracker:
         else:
             items_by_brand = []
             for brand in brands:
-                brand_lower = brand.lower()
-                matches = [item for item in data.get('bestsellers', []) if brand_lower in item['title'].lower()]
+                matches = [item for item in data.get('bestsellers', []) if self._brand_matches_title(brand, item.get('title'))]
                 summary_items = []
                 for item in sorted(matches, key=lambda x: x['rank'])[:3]:
                     diff_text = self._format_rank_diff_en(self._find_previous_item(previous_data, item), item['rank'])
@@ -1001,8 +1009,7 @@ class AmazonBestsellerTracker:
         else:
             items_by_brand = []
             for brand in brands:
-                brand_lower = brand.lower()
-                matches = [item for item in data.get('movers', []) if brand_lower in item['title'].lower()]
+                matches = [item for item in data.get('movers', []) if self._brand_matches_title(brand, item.get('title'))]
                 summary_items = []
                 for item in sorted(matches, key=lambda x: x['rank'])[:3]:
                     diff_text = self._format_rank_diff_en(self._find_previous_item(previous_data, item, data_key='movers'), item['rank'])
@@ -1020,8 +1027,7 @@ class AmazonBestsellerTracker:
         else:
             items_by_brand = []
             for brand in brands:
-                brand_lower = brand.lower()
-                matches = [item for item in new_data.get('bestsellers', []) if brand_lower in item['title'].lower()]
+                matches = [item for item in new_data.get('bestsellers', []) if self._brand_matches_title(brand, item.get('title'))]
                 summary_items = []
                 for item in sorted(matches, key=lambda x: x['rank'])[:3]:
                     diff_text = self._format_rank_diff_en(self._find_previous_item(old_data, item), item['rank'])
@@ -1039,8 +1045,7 @@ class AmazonBestsellerTracker:
         else:
             items_by_brand = []
             for brand in brands:
-                brand_lower = brand.lower()
-                matches = [item for item in new_data.get('movers', []) if brand_lower in item['title'].lower()]
+                matches = [item for item in new_data.get('movers', []) if self._brand_matches_title(brand, item.get('title'))]
                 summary_items = []
                 for item in sorted(matches, key=lambda x: x['rank'])[:3]:
                     diff_text = self._format_rank_diff_en(self._find_previous_item(old_data, item, data_key='movers'), item['rank'])

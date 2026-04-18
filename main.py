@@ -6,10 +6,12 @@ Telegram webhook and scheduled crawler for Amazon beauty bestsellers.
 """
 
 import argparse
+import io
 import json
 import logging
 import os
 import re
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +20,7 @@ import requests
 from bs4 import BeautifulSoup
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request, jsonify
+from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -51,21 +54,6 @@ class AmazonBestsellerTracker:
     def save_state(self):
         with open(self.state_file, 'w', encoding='utf-8') as f:
             json.dump(self.state, f, ensure_ascii=False, indent=2)
-
-    def schedule_update(self, reason='manual'):
-        if self.update_lock.locked():
-            logging.info('Update already running; skipping duplicate request.')
-            return False
-
-        thread = threading.Thread(target=self._run_update_thread, args=(reason,), daemon=True)
-        thread.start()
-        return True
-
-    def _run_update_thread(self, reason):
-        logging.info(f'Background update started ({reason})')
-        with self.update_lock:
-            self.update()
-        logging.info(f'Background update finished ({reason})')
 
     def fetch_bestsellers(self):
         if self.config.get('use_browser', False):
@@ -414,6 +402,196 @@ class AmazonBestsellerTracker:
             logging.error(f"Error sending Telegram message: {e}")
             return False
 
+    def send_telegram_photo(self, chat_id, image_path, caption=None):
+        token = self.get_telegram_token()
+        if not token:
+            logging.warning('Telegram bot token is not configured. Skipping Telegram photo notification.')
+            return False
+
+        url = f"https://api.telegram.org/bot{token}/sendPhoto"
+        data = {'chat_id': chat_id}
+        if caption:
+            data['caption'] = caption
+        try:
+            with open(image_path, 'rb') as photo_file:
+                files = {'photo': photo_file}
+                response = requests.post(url, data=data, files=files, timeout=20)
+            if response.status_code != 200:
+                logging.error(f"Telegram photo error: {response.status_code} {response.text}")
+                return False
+            return True
+        except requests.RequestException as e:
+            logging.error(f"Error sending Telegram photo: {e}")
+            return False
+        except FileNotFoundError:
+            logging.error(f"Telegram photo error: file not found {image_path}")
+            return False
+
+    def broadcast_photo(self, image_path, caption=None):
+        if not self.get_telegram_token():
+            logging.warning('Telegram bot token missing. Broadcast photo skipped.')
+            return
+
+        for chat_id in self.state.get('chat_ids', []):
+            self.send_telegram_photo(chat_id, image_path, caption)
+
+    def _get_font(self, size=24):
+        font_paths = [
+            '/System/Library/Fonts/AppleGothic.ttf',
+            '/System/Library/Fonts/AppleSDGothicNeo.ttc',
+            '/Library/Fonts/AppleGothic.ttf',
+            '/Library/Fonts/AppleSDGothicNeo.ttc',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        ]
+        for path in font_paths:
+            try:
+                if Path(path).exists():
+                    return ImageFont.truetype(str(path), size)
+            except Exception:
+                continue
+        return ImageFont.load_default()
+
+    def _fetch_remote_image(self, url, size=(120, 120)):
+        if not url:
+            return None
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            image = Image.open(io.BytesIO(response.content)).convert('RGB')
+            image.thumbnail(size, Image.Resampling.LANCZOS)
+            return image
+        except Exception:
+            return None
+
+    def _wrap_text(self, text, font, max_width, draw):
+        words = text.split()
+        lines = []
+        current_line = ''
+        for word in words:
+            candidate = f"{current_line} {word}".strip()
+            width = draw.textlength(candidate, font=font)
+            if width <= max_width:
+                current_line = candidate
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        return lines
+
+    def _build_image_card(self, headline, items_by_brand, footer_text=None):
+        width = 1200
+        padding = 40
+        title_font = self._get_font(40)
+        brand_font = self._get_font(28)
+        item_title_font = self._get_font(24)
+        item_meta_font = self._get_font(20)
+        small_font = self._get_font(18)
+
+        line_height = 34
+        y = padding
+        height = padding + 140
+
+        for entry in items_by_brand:
+            block_height = 170
+            if entry['items']:
+                block_height += len(entry['items']) * 150
+            height += block_height + 20
+
+        if footer_text:
+            height += 60
+
+        image = Image.new('RGB', (width, height), color=(255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        draw.text((padding, y), headline, fill=(20, 20, 20), font=title_font)
+        y += 70
+        draw.text((padding, y), datetime.now().strftime('생성 시간: %Y-%m-%d %H:%M:%S'), fill=(100, 100, 100), font=item_meta_font)
+        y += 40
+        draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=2)
+        y += 30
+
+        for entry in items_by_brand:
+            draw.rectangle((padding - 10, y - 10, width - padding + 10, y + 160), fill=(248, 248, 250), outline=(220, 220, 220), width=1)
+            draw.text((padding, y), f"{entry['brand']} ({len(entry['items'])}개)", fill=(10, 10, 10), font=brand_font)
+            y += 45
+
+            if not entry['items']:
+                draw.text((padding, y), '현재 목록에 등록된 제품이 없습니다.', fill=(120, 120, 120), font=item_meta_font)
+                y += 80
+                continue
+
+            for item in entry['items']:
+                thumb = self._fetch_remote_image(item.get('image'))
+                if thumb:
+                    image.paste(thumb, (padding, y))
+                else:
+                    draw.rectangle((padding, y, padding + 140, y + 140), fill=(235, 235, 235), outline=(200, 200, 200))
+                    draw.text((padding + 18, y + 55), 'No Image', fill=(150, 150, 150), font=small_font)
+
+                text_x = padding + 170
+                title_lines = self._wrap_text(f"{item['rank']}위 {item['title']}", item_title_font, width - text_x - padding, draw)
+                for line in title_lines[:3]:
+                    draw.text((text_x, y), line, fill=(20, 20, 20), font=item_title_font)
+                    y += 30
+
+                diff_text = item.get('diff_text', '')
+                draw.text((text_x, y), diff_text, fill=(90, 90, 90), font=item_meta_font)
+                y += 30
+                meta_text = f"{item.get('price', 'N/A')} · {item.get('rating', 'N/A')} · {item.get('reviews', 'N/A')}"
+                draw.text((text_x, y), meta_text, fill=(90, 90, 90), font=small_font)
+                y += 50
+
+            y += 10
+
+        if footer_text:
+            draw.line((padding, y, width - padding, y), fill=(220, 220, 220), width=2)
+            y += 20
+            draw.text((padding, y), footer_text, fill=(80, 80, 80), font=small_font)
+
+        output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+        image.save(output_file.name, format='PNG')
+        output_file.close()
+        return output_file.name
+
+    def build_summary_image(self, data, previous_data):
+        brands = self.state.get('brands', [])
+        if not brands:
+            items_by_brand = [{'brand': '추적 중인 브랜드가 없습니다.', 'items': []}]
+        else:
+            items_by_brand = []
+            for brand in brands:
+                brand_lower = brand.lower()
+                matches = [item for item in data.get('bestsellers', []) if brand_lower in item['title'].lower()]
+                summary_items = []
+                for item in sorted(matches, key=lambda x: x['rank'])[:3]:
+                    diff_text = self._format_rank_diff(self._find_previous_item(previous_data, item), item['rank'])
+                    summary_items.append({**item, 'diff_text': diff_text})
+                items_by_brand.append({'brand': brand, 'items': summary_items})
+
+        image_path = self._build_image_card('📋 현재 추적 브랜드 요약', items_by_brand, footer_text=f'총 추적 브랜드: {len(brands)}개')
+        caption = f'Amazon Beauty Bestseller 요약 • {len(brands)}개 브랜드'
+        return image_path, caption
+
+    def build_update_image(self, old_data, new_data):
+        brands = self.state.get('brands', [])
+        if not brands:
+            items_by_brand = [{'brand': '추적 중인 브랜드가 없습니다.', 'items': []}]
+        else:
+            items_by_brand = []
+            for brand in brands:
+                brand_lower = brand.lower()
+                matches = [item for item in new_data.get('bestsellers', []) if brand_lower in item['title'].lower()]
+                summary_items = []
+                for item in sorted(matches, key=lambda x: x['rank'])[:3]:
+                    diff_text = self._format_rank_diff(self._find_previous_item(old_data, item), item['rank'])
+                    summary_items.append({**item, 'diff_text': diff_text})
+                items_by_brand.append({'brand': brand, 'items': summary_items})
+
+        image_path = self._build_image_card('📣 Amazon Beauty Bestseller 업데이트', items_by_brand, footer_text=f'총 추적 브랜드: {len(brands)}개')
+        caption = f'Amazon Beauty Bestseller 업데이트 • {len(brands)}개 브랜드'
+        return image_path, caption
+
     def broadcast_message(self, text):
         if not self.get_telegram_token():
             logging.warning('Telegram bot token missing. Broadcast skipped.')
@@ -460,8 +638,9 @@ class AmazonBestsellerTracker:
         if action in ['start', '시작']:
             self.add_chat_id(chat_id)
             if not self.load_data():
-                self.schedule_update('start')
-                return self.send_telegram_message(chat_id, '✅ 알림 등록이 완료되었습니다. 현재 데이터가 없어 업데이트를 시작했습니다. 완료되면 순위 변동을 전송합니다.')
+                if self.fetch_and_save_data():
+                    return self.send_telegram_message(chat_id, '✅ 알림 등록 및 초기 데이터 수집이 완료되었습니다. 6시간마다 순위 변동을 전송합니다.')
+                return self.send_telegram_message(chat_id, '⚠️ 초기 데이터 수집에 실패했습니다. 잠시 후 다시 시도해주세요.')
             return self.send_telegram_message(chat_id, '✅ 알림 등록이 완료되었습니다. 6시간마다 추적 브랜드 순위 변동을 전송합니다.')
 
         if action in ['add', '추가']:
@@ -469,7 +648,10 @@ class AmazonBestsellerTracker:
                 return self.send_telegram_message(chat_id, '사용법: /add <브랜드> 또는 추가 <브랜드>')
             added = self.add_brand(argument)
             if not self.load_data():
-                self.schedule_update('add')
+                if self.fetch_and_save_data():
+                    pass
+                else:
+                    return self.send_telegram_message(chat_id, '⚠️ 데이터 수집에 실패했습니다. 잠시 후 다시 시도해주세요.')
             if added:
                 return self.send_telegram_message(chat_id, f"✅ 브랜드 '{argument}' 이(가) 추적 목록에 추가되었습니다.")
             return self.send_telegram_message(chat_id, f"⚠️ 브랜드 '{argument}' 은(는) 이미 추적 중입니다.")
@@ -483,15 +665,37 @@ class AmazonBestsellerTracker:
             return self.send_telegram_message(chat_id, f"⚠️ 브랜드 '{argument}' 을(를) 찾을 수 없습니다.")
 
         if action in ['update', '업데이트']:
-            self.schedule_update('telegram_update')
-            return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 예약했습니다. 완료되면 추적 중인 브랜드 순위 변동을 전송합니다.')
+            self.update()
+            data = self.load_data()
+            previous_data = self.load_data(self.previous_data_file)
+            if data and data.get('bestsellers'):
+                image_path, caption = self.build_update_image(previous_data, data)
+                sent = self.send_telegram_photo(chat_id, image_path, caption)
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+                if sent:
+                    return True
+            return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 완료했습니다. 추적 중인 브랜드 순위 변동을 전송했습니다.')
 
         if action in ['summary', '요약']:
             data = self.load_data()
             if not data or not data.get('bestsellers'):
-                self.schedule_update('summary')
-                return self.send_telegram_message(chat_id, '🔍 현재 데이터가 없습니다. 업데이트를 시작했습니다. 완료되면 다시 /summary를 보내주세요.')
-            return self.send_telegram_message(chat_id, self.build_summary_text())
+                if not self.fetch_and_save_data():
+                    return self.send_telegram_message(chat_id, '🔍 데이터 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')
+                data = self.load_data()
+
+            previous_data = self.load_data(self.previous_data_file)
+            image_path, caption = self.build_summary_image(data, previous_data)
+            sent = self.send_telegram_photo(chat_id, image_path, caption)
+            try:
+                os.remove(image_path)
+            except Exception:
+                pass
+            if not sent:
+                return self.send_telegram_message(chat_id, self.build_summary_text())
+            return True
 
         if action in ['help', '도움', '도움말']:
             return self.send_telegram_message(chat_id, self.make_help_text())
@@ -521,9 +725,16 @@ class AmazonBestsellerTracker:
         if data and data.get('bestsellers'):
             return data
 
-        logging.info('No bestseller data available. Scheduling update now...')
-        self.schedule_update('ensure_data_available')
+        logging.info('No bestseller data available. Fetching initial data now...')
+        if self.fetch_and_save_data():
+            return self.load_data()
         return None
+
+    def fetch_and_save_data(self):
+        bestsellers = self.fetch_bestsellers()
+        if not bestsellers:
+            return False
+        return self.save_data(bestsellers)
 
     def update(self):
         logging.info('Updating bestseller data...')
@@ -534,8 +745,12 @@ class AmazonBestsellerTracker:
             if saved:
                 logging.info(f'Successfully updated with {len(bestsellers)} products')
                 if self.state.get('chat_ids'):
-                    message = self.build_update_message(previous_data, {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers})
-                    self.broadcast_message(message)
+                    image_path, caption = self.build_update_image(previous_data, {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers})
+                    self.broadcast_photo(image_path, caption)
+                    try:
+                        os.remove(image_path)
+                    except Exception:
+                        pass
         else:
             logging.warning('Failed to update data')
 

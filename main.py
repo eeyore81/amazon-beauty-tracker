@@ -58,52 +58,18 @@ class AmazonBestsellerTracker:
             json.dump(self.state, f, ensure_ascii=False, indent=2)
 
     def fetch_bestsellers(self):
-        if self.config.get('use_browser', False):
-            browser_items = self.fetch_bestsellers_with_browser()
-            if browser_items and len(browser_items) >= 100:
-                return browser_items
-            logging.warning('Browser mode returned incomplete data. Falling back to request mode.')
+        # Force Playwright-only collection as requested.
+        self.config['use_browser'] = True
+        browser_items = self.fetch_bestsellers_with_browser()
+        if browser_items:
+            return browser_items
+        logging.error('Playwright scraping failed and no non-browser fallback is allowed.')
+        return None
 
-        try:
-            headers = {
-                'User-Agent': self.config['user_agent'],
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://www.amazon.com/',
-            }
-            session = requests.Session()
-            session.headers.update(headers)
-            all_items = []
-            seen_keys = set()
-
-            # Amazon beauty bestsellers are currently exposed as 2 pages (1-50, 51-100).
-            page_urls = [self.config['url']]
-            second_page = self.config.get('page_2_url') or f"{self.config['url']}?pg=2"
-            page_urls.append(second_page)
-
-            for page_url in page_urls:
-                if len(all_items) >= 100:
-                    break
-
-                response = session.get(page_url, timeout=20)
-                response.raise_for_status()
-                soup = BeautifulSoup(response.content, 'lxml')
-                page_items = self._parse_bestseller_items(soup)
-                page_items = self._enrich_page_items_from_client_recs(soup, page_items, session)
-
-                for item in page_items:
-                    key = item.get('asin') or item['title'].strip().lower()
-                    if key in seen_keys:
-                        continue
-                    seen_keys.add(key)
-                    all_items.append(item)
-                    if len(all_items) >= 100:
-                        break
-
-            return all_items[:100]
-        except requests.RequestException as e:
-            logging.error(f"Error fetching bestsellers: {e}")
-            return None
+    def _count_placeholder_items(self, items):
+        if not items:
+            return 0
+        return sum(1 for item in items if str(item.get('title', '')).startswith('ASIN '))
 
     def _enrich_page_items_from_client_recs(self, soup, page_items, session):
         rank_pairs = self._extract_client_recs_ranks(soup)
@@ -279,6 +245,51 @@ class AmazonBestsellerTracker:
             }
             self.asin_detail_cache[asin] = details
             return dict(details)
+        except Exception:
+            search_details = self._fetch_item_details_from_search(asin, session)
+            if search_details:
+                self.asin_detail_cache[asin] = search_details
+                return dict(search_details)
+            return None
+
+    def _fetch_item_details_from_search(self, asin, session):
+        try:
+            response = session.get(f'https://www.amazon.com/s?k={asin}', timeout=20)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'lxml')
+
+            # Prefer exact ASIN card if present.
+            card = soup.select_one(f'div.s-result-item[data-asin="{asin}"]')
+            if not card:
+                cards = [node for node in soup.select('div.s-result-item[data-asin]') if node.get('data-asin')]
+                card = cards[0] if cards else None
+            if not card:
+                return None
+
+            title_elem = card.select_one('h2 a span') or card.select_one('span.a-size-medium')
+            title = title_elem.get_text(' ', strip=True) if title_elem else ''
+            if not title:
+                return None
+
+            image_elem = card.select_one('img.s-image') or card.select_one('img')
+            image = image_elem.get('src') if image_elem else None
+
+            price_elem = card.select_one('span.a-price span.a-offscreen') or card.select_one('span.a-price-whole')
+            price = price_elem.get_text(strip=True) if price_elem else 'N/A'
+
+            rating_elem = card.select_one('span.a-icon-alt')
+            rating = rating_elem.get_text(strip=True) if rating_elem else 'N/A'
+
+            reviews_elem = card.select_one('span.a-size-base.s-underline-text') or card.select_one('span.a-size-base')
+            reviews = reviews_elem.get_text(strip=True) if reviews_elem else 'N/A'
+
+            return {
+                'title': title,
+                'price': price,
+                'rating': rating,
+                'reviews': reviews,
+                'image': image,
+            }
         except Exception:
             return None
 

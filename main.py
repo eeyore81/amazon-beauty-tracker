@@ -766,15 +766,15 @@ class AmazonBestsellerTracker:
         item_gap = 16
         header_height = 170
         brand_header_height = 74
-        item_row_height = 206
-        thumb_size = 176
+        item_row_height = 302
+        thumb_size = 264
 
         title_font = self._get_font(56)
         subtitle_font = self._get_font(28)
         brand_font = self._get_font(42)
         item_title_font = self._get_font(34)
         item_meta_font = self._get_font(28)
-        small_font = self._get_font(24)
+        small_font = self._get_font(30)
 
         total_height = padding + header_height
         for entry in items_by_brand:
@@ -841,7 +841,7 @@ class AmazonBestsellerTracker:
 
             row_y = section_top + brand_header_height
             if not entry['items']:
-                draw.text((padding + 24, row_y + 10), 'No matched products found.', fill=(119, 129, 144), font=item_meta_font)
+                draw.text((padding + 24, row_y + 10), 'No matched products found.', fill=(119, 129, 144), font=small_font)
                 y = section_top + section_height + section_gap
                 continue
 
@@ -872,23 +872,23 @@ class AmazonBestsellerTracker:
                         outline=(205, 216, 229),
                         width=1,
                     )
-                    draw.text((thumb_x + 24, thumb_y + 72), 'No Image', fill=(134, 144, 158), font=small_font)
+                    draw.text((thumb_x + 30, thumb_y + 112), 'No Image', fill=(134, 144, 158), font=small_font)
 
                 text_x = thumb_x + thumb_size + 20
                 text_width = row_right - text_x - 16
 
-                title = self._truncate_text(item.get('title', ''), 20)
+                title = self._truncate_text(item.get('title', ''), 25)
                 title_lines = self._wrap_text(f"#{item['rank']} {title}", item_title_font, text_width, draw)
                 draw.text((text_x, row_top + 20), title_lines[0] if title_lines else f"#{item['rank']}", fill=(28, 37, 52), font=item_title_font)
                 if len(title_lines) > 1:
                     draw.text((text_x, row_top + 64), title_lines[1], fill=(28, 37, 52), font=item_title_font)
 
                 diff_text = item.get('diff_text', '')
-                draw.text((text_x, row_top + 112), diff_text, fill=(67, 98, 132), font=item_meta_font)
+                draw.text((text_x, row_top + 150), diff_text, fill=(67, 98, 132), font=item_meta_font)
 
                 meta_text = f"{item.get('price', 'N/A')}  |  {item.get('rating', 'N/A')}  |  {item.get('reviews', 'N/A')}"
                 meta_lines = self._wrap_text(meta_text, small_font, text_width, draw)
-                draw.text((text_x, row_top + 148), meta_lines[0] if meta_lines else meta_text, fill=(111, 123, 140), font=small_font)
+                draw.text((text_x, row_top + 196), meta_lines[0] if meta_lines else meta_text, fill=(111, 123, 140), font=small_font)
 
                 row_y += item_row_height + item_gap
 
@@ -917,8 +917,8 @@ class AmazonBestsellerTracker:
                     summary_items.append({**item, 'diff_text': diff_text})
                 items_by_brand.append({'brand': brand, 'items': summary_items})
 
-        image_path = self._build_image_card('Amazon Beauty Bestseller Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
-        caption = f'Amazon Beauty Bestseller Summary • {len(brands)} brands'
+        image_path = self._build_image_card('Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Summary • {len(brands)} brands'
         return image_path, caption
 
     def build_update_image(self, old_data, new_data):

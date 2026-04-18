@@ -2,7 +2,7 @@ name: Amazon Bestseller CI
 
 on:
   repository_dispatch:
-    types: [telegram]
+    types: [telegram_trigger]
   schedule:
     - cron: '0 */6 * * *'
 
@@ -42,8 +42,8 @@ jobs:
             python main.py --update-now
           else
             python main.py \
-              $([[ -n "${{ github.event.client_payload.telegram_chat_id }}" ]] && echo "--telegram-chat-id '${{ github.event.client_payload.telegram_chat_id }}'") \
-              $([[ -n "${{ github.event.client_payload.telegram_text }}" ]] && echo "--telegram-text '${{ github.event.client_payload.telegram_text }}'")
+              $([[ -n "${{ github.event.client_payload.chat_id }}" ]] && echo "--telegram-chat-id '${{ github.event.client_payload.chat_id }}'") \
+              $([[ -n "${{ github.event.client_payload.full_text }}" ]] && echo "--telegram-text '${{ github.event.client_payload.full_text }}'")
           fi
 
       - name: Commit state changes

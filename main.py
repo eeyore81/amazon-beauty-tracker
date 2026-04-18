@@ -59,7 +59,10 @@ class AmazonBestsellerTracker:
 
     def fetch_bestsellers(self):
         if self.config.get('use_browser', False):
-            return self.fetch_bestsellers_with_browser()
+            browser_items = self.fetch_bestsellers_with_browser()
+            if browser_items and len(browser_items) >= 100:
+                return browser_items
+            logging.warning('Browser mode returned incomplete data. Falling back to request mode.')
 
         try:
             headers = {
@@ -297,19 +300,32 @@ class AmazonBestsellerTracker:
 
                 items = []
                 seen_keys = set()
-                current_url = self.config['url']
-                page_index = 1
-                max_pages = self.config.get('browser_max_pages', 6)
+                page_urls = [self.config['url']]
+                second_page = self.config.get('page_2_url') or f"{self.config['url']}?pg=2"
+                page_urls.append(second_page)
 
-                while current_url and len(items) < 100 and page_index <= max_pages:
-                    logging.info(f'Browser loading page {page_index}: {current_url}')
-                    page.goto(current_url, timeout=45000, wait_until='networkidle')
+                for page_index, page_url in enumerate(page_urls, start=1):
+                    if len(items) >= 100:
+                        break
+
+                    logging.info(f'Browser loading page {page_index}: {page_url}')
+                    page.goto(page_url, timeout=45000, wait_until='domcontentloaded')
                     page.wait_for_timeout(self.config.get('browser_initial_wait', 4) * 1000)
 
-                    self._browser_scroll_page(page)
+                    self._browser_scroll_page(page, expected_min_items=50)
                     html = page.content()
                     soup = BeautifulSoup(html, 'lxml')
                     page_items = self._parse_bestseller_items(soup)
+
+                    if len(page_items) < 50:
+                        # Retry a few times after extra scrolling when CI/network is slow.
+                        for _ in range(3):
+                            self._browser_scroll_page(page, expected_min_items=50)
+                            soup = BeautifulSoup(page.content(), 'lxml')
+                            page_items = self._parse_bestseller_items(soup)
+                            if len(page_items) >= 50:
+                                break
+
                     for item in page_items:
                         key = item.get('asin') or item['title'].strip().lower()
                         if key in seen_keys:
@@ -318,14 +334,7 @@ class AmazonBestsellerTracker:
                         items.append(item)
                         if len(items) >= 100:
                             break
-                    if len(items) >= 100:
-                        break
-
-                    next_page_href = self._find_next_page_link(soup)
-                    if not next_page_href:
-                        break
-                    current_url = requests.compat.urljoin(current_url, next_page_href)
-                    page_index += 1
+                    logging.info(f'Browser page {page_index}: parsed {len(page_items)} items, total {len(items)} items')
 
                 context.close()
                 browser.close()
@@ -334,7 +343,7 @@ class AmazonBestsellerTracker:
             logging.error(f"Error fetching bestsellers with browser automation: {e}")
             return None
 
-    def _browser_scroll_page(self, page):
+    def _browser_scroll_page(self, page, expected_min_items=50):
         scroll_steps = self.config.get('browser_scroll_steps', 12)
         scroll_delay = self.config.get('browser_scroll_delay', 2)
         for _ in range(scroll_steps):
@@ -346,6 +355,46 @@ class AmazonBestsellerTracker:
             page.wait_for_load_state('networkidle', timeout=15000)
         except Exception:
             pass
+        self._wait_for_browser_items(page, expected_min_items)
+
+    def _wait_for_browser_items(self, page, expected_min_items):
+        selector = (
+            'div.a-cardui._cDEzb_grid-cell_1uMOS.expandableGrid.p13n-grid-content,'
+            'div._cDEzb_grid-cell_1uMOS.expandableGrid.p13n-grid-content,'
+            'ol#zg-ordered-list > li,'
+            'li.zg-item-immersion,'
+            'div.p13n-sc-uncoverable-faceout,'
+            'div.s-result-item,'
+            'div.zg_itemWrapper'
+        )
+
+        stable_count = 0
+        previous = -1
+        for _ in range(8):
+            try:
+                current = page.locator(selector).count()
+            except Exception:
+                break
+
+            if current >= expected_min_items:
+                return
+
+            if current == previous:
+                stable_count += 1
+            else:
+                stable_count = 0
+            previous = current
+
+            if stable_count >= 2:
+                page.evaluate('window.scrollBy(0, window.innerHeight * 0.7);')
+            page.wait_for_timeout(900)
+
+    def _is_playwright_available(self):
+        try:
+            from playwright.sync_api import sync_playwright  # noqa: F401
+            return True
+        except Exception:
+            return False
 
     def _find_next_page_link(self, soup):
         next_selectors = [
@@ -1088,6 +1137,9 @@ def run_ci_mode(tracker, args):
     text = args.telegram_text or os.getenv('TELEGRAM_TEXT')
 
     if args.use_browser:
+        tracker.config['use_browser'] = True
+    elif os.getenv('CI', '').lower() in {'1', 'true', 'yes'} and tracker._is_playwright_available():
+        # In CI, prefer browser mode for full 50+50 item capture after lazy loading.
         tracker.config['use_browser'] = True
 
     logging.info(f'CI payload chat_id={chat_id!r}, text={text!r}, update_now={args.update_now}, serve={args.serve}, use_browser={tracker.config.get("use_browser")}')

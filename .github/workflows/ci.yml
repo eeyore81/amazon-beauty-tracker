@@ -45,9 +45,14 @@ jobs:
             echo "CI event: repository_dispatch"
             echo "client_payload.chat_id=${{ github.event.client_payload.chat_id }}"
             echo "client_payload.full_text=${{ github.event.client_payload.full_text }}"
-            python main.py \
-              $([[ -n "${{ github.event.client_payload.chat_id }}" ]] && echo "--telegram-chat-id '${{ github.event.client_payload.chat_id }}'") \
-              $([[ -n "${{ github.event.client_payload.full_text }}" ]] && echo "--telegram-text '${{ github.event.client_payload.full_text }}'")
+            args=()
+            if [ -n "${{ github.event.client_payload.chat_id }}" ]; then
+              args+=(--telegram-chat-id "${{ github.event.client_payload.chat_id }}")
+            fi
+            if [ -n "${{ github.event.client_payload.full_text }}" ]; then
+              args+=(--telegram-text "${{ github.event.client_payload.full_text }}")
+            fi
+            python main.py "${args[@]}"
           fi
 
       - name: Commit state changes

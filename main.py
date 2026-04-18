@@ -30,10 +30,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 class AmazonBestsellerTracker:
     def __init__(self, config_file="config.json"):
         self.config = self._load_config(config_file)
+        self.bestseller_url = self.config["url"]
+        self.movers_url = self.config.get(
+            "movers_url",
+            "https://www.amazon.com/-/ko/gp/movers-and-shakers/beauty/ref=zg_bs_tab_t_beauty_bsms",
+        )
         self.data_file = Path(self.config["data_file"])
         self.previous_data_file = Path(self.config["previous_data_file"])
+        self.movers_data_file = Path(self.config.get("movers_data_file", "data/movers.json"))
+        self.previous_movers_data_file = Path(self.config.get("previous_movers_data_file", "data/movers_prev.json"))
         self.state_file = Path(self.config["state_file"])
         self.data_file.parent.mkdir(parents=True, exist_ok=True)
+        self.movers_data_file.parent.mkdir(parents=True, exist_ok=True)
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         self.scheduler = BackgroundScheduler()
         self.update_lock = threading.Lock()
@@ -60,11 +68,26 @@ class AmazonBestsellerTracker:
     def fetch_bestsellers(self):
         # Force Playwright-only collection as requested.
         self.config['use_browser'] = True
-        browser_items = self.fetch_bestsellers_with_browser()
+        browser_items = self.fetch_bestsellers_with_browser(self.bestseller_url, page_2_url=self.config.get('page_2_url'))
         if browser_items:
             return browser_items
         logging.error('Playwright scraping failed and no non-browser fallback is allowed.')
         return None
+
+    def fetch_movers_and_shakers(self):
+        # Keep the same Playwright-only strategy used by bestseller crawling.
+        self.config['use_browser'] = True
+        browser_items = self.fetch_bestsellers_with_browser(self.movers_url, page_2_url=self.config.get('movers_page_2_url'))
+        if browser_items:
+            return browser_items
+        logging.error('Playwright scraping failed for movers and shakers data.')
+        return None
+
+    def _build_page_url(self, base_url, page_number):
+        if page_number <= 1:
+            return base_url
+        separator = '&' if '?' in base_url else '?'
+        return f'{base_url}{separator}pg={page_number}'
 
     def _count_placeholder_items(self, items):
         if not items:
@@ -293,7 +316,7 @@ class AmazonBestsellerTracker:
         except Exception:
             return None
 
-    def fetch_bestsellers_with_browser(self):
+    def fetch_bestsellers_with_browser(self, base_url=None, page_2_url=None):
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as e:
@@ -311,9 +334,9 @@ class AmazonBestsellerTracker:
 
                 items = []
                 seen_keys = set()
-                page_urls = [self.config['url']]
-                second_page = self.config.get('page_2_url') or f"{self.config['url']}?pg=2"
-                page_urls.append(second_page)
+                first_page = base_url or self.bestseller_url
+                second_page = page_2_url or self._build_page_url(first_page, 2)
+                page_urls = [first_page, second_page]
 
                 for page_index, page_url in enumerate(page_urls, start=1):
                     if len(items) >= 100:
@@ -351,7 +374,7 @@ class AmazonBestsellerTracker:
                 browser.close()
                 return items[:100]
         except Exception as e:
-            logging.error(f"Error fetching bestsellers with browser automation: {e}")
+            logging.error(f"Error fetching items with browser automation: {e}")
             return None
 
     def _browser_scroll_page(self, page, expected_min_items=50):
@@ -501,18 +524,20 @@ class AmazonBestsellerTracker:
             return None
         return image_elem.get('src') or image_elem.get('data-src') or image_elem.get('data-old-hires')
 
-    def save_data(self, bestsellers):
+    def save_data(self, items, path=None, previous_path=None, data_key='bestsellers'):
+        target_file = self.data_file if path is None else Path(path)
+        previous_file = self.previous_data_file if previous_path is None else Path(previous_path)
         try:
-            if self.data_file.exists():
+            if target_file.exists():
                 try:
-                    self.previous_data_file.write_text(self.data_file.read_text(encoding='utf-8'), encoding='utf-8')
+                    previous_file.write_text(target_file.read_text(encoding='utf-8'), encoding='utf-8')
                 except Exception:
                     logging.warning('Unable to copy previous data file.')
 
-            data = {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers}
-            with open(self.data_file, 'w', encoding='utf-8') as f:
+            data = {'timestamp': datetime.now().isoformat(), data_key: items}
+            with open(target_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            logging.info(f"Data saved to {self.data_file}")
+            logging.info(f"Data saved to {target_file}")
             return True
         except Exception as e:
             logging.error(f"Error saving data: {e}")
@@ -597,11 +622,11 @@ class AmazonBestsellerTracker:
         lines.append(f"총 추적 브랜드: {len(self.state.get('brands', []))}개")
         return '\n'.join(lines)
 
-    def _find_previous_item(self, old_data, current_item):
-        if not old_data or 'bestsellers' not in old_data:
+    def _find_previous_item(self, old_data, current_item, data_key='bestsellers'):
+        if not old_data or data_key not in old_data:
             return None
         current_title = current_item['title'].strip().lower()
-        candidates = [item for item in old_data['bestsellers'] if item['title'].strip().lower() == current_title]
+        candidates = [item for item in old_data[data_key] if item['title'].strip().lower() == current_title]
         return min(candidates, key=lambda x: x['rank']) if candidates else None
 
     def _format_rank_diff(self, old_item, new_rank):
@@ -652,6 +677,43 @@ class AmazonBestsellerTracker:
             lines.append(f"📌 {brand} ({len(matches)}개)")
             for item in sorted(matches, key=lambda x: x['rank']):
                 old_item = self._find_previous_item(previous_data, item)
+                diff_text = self._format_rank_diff(old_item, item['rank'])
+                lines.append(f"{item['rank']}위 {item['title']} {diff_text}".strip())
+                if item.get('image'):
+                    lines.append(item['image'])
+            lines.append('')
+
+        lines.append('────────────────────────')
+        lines.append(f"총 추적 브랜드: {len(brands)}개")
+        lines.append('목록 보기: /list    요약 보기: /summary')
+        return '\n'.join(lines)
+
+    def build_movers_summary_text(self):
+        data = self.load_data(self.movers_data_file)
+        if not data or 'movers' not in data:
+            return '🔍 아직 수집된 Move and Shakers 데이터가 없습니다. 먼저 업데이트를 실행해주세요.'
+
+        previous_data = self.load_data(self.previous_movers_data_file)
+        lines = [
+            '📋 현재 추적 브랜드 Move and Shakers 요약',
+            f"수집 시간: {data.get('timestamp', 'N/A')}",
+            '────────────────────────',
+        ]
+        brands = self.state.get('brands', [])
+        if not brands:
+            lines.append('추적 중인 브랜드가 없습니다. /add <브랜드> 로 브랜드를 추가하세요.')
+            return '\n'.join(lines)
+
+        for brand in brands:
+            brand_lower = brand.lower()
+            matches = [item for item in data['movers'] if brand_lower in item['title'].lower()]
+            if not matches:
+                lines.append(f"❌ {brand}: 현재 목록에 없음")
+                continue
+
+            lines.append(f"📌 {brand} ({len(matches)}개)")
+            for item in sorted(matches, key=lambda x: x['rank']):
+                old_item = self._find_previous_item(previous_data, item, data_key='movers')
                 diff_text = self._format_rank_diff(old_item, item['rank'])
                 lines.append(f"{item['rank']}위 {item['title']} {diff_text}".strip())
                 if item.get('image'):
@@ -932,6 +994,25 @@ class AmazonBestsellerTracker:
         caption = f'Summary • {len(brands)} brands'
         return image_path, caption
 
+    def build_movers_summary_image(self, data, previous_data):
+        brands = self.state.get('brands', [])
+        if not brands:
+            items_by_brand = [{'brand': 'No tracked brands.', 'items': []}]
+        else:
+            items_by_brand = []
+            for brand in brands:
+                brand_lower = brand.lower()
+                matches = [item for item in data.get('movers', []) if brand_lower in item['title'].lower()]
+                summary_items = []
+                for item in sorted(matches, key=lambda x: x['rank'])[:3]:
+                    diff_text = self._format_rank_diff_en(self._find_previous_item(previous_data, item, data_key='movers'), item['rank'])
+                    summary_items.append({**item, 'diff_text': diff_text})
+                items_by_brand.append({'brand': brand, 'items': summary_items})
+
+        image_path = self._build_image_card('Move and Shakers Summary', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Move and Shakers Summary • {len(brands)} brands'
+        return image_path, caption
+
     def build_update_image(self, old_data, new_data):
         brands = self.state.get('brands', [])
         if not brands:
@@ -949,6 +1030,25 @@ class AmazonBestsellerTracker:
 
         image_path = self._build_image_card('Amazon Beauty Bestseller Update', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
         caption = f'Amazon Beauty Bestseller Update • {len(brands)} brands'
+        return image_path, caption
+
+    def build_movers_update_image(self, old_data, new_data):
+        brands = self.state.get('brands', [])
+        if not brands:
+            items_by_brand = [{'brand': 'No tracked brands.', 'items': []}]
+        else:
+            items_by_brand = []
+            for brand in brands:
+                brand_lower = brand.lower()
+                matches = [item for item in new_data.get('movers', []) if brand_lower in item['title'].lower()]
+                summary_items = []
+                for item in sorted(matches, key=lambda x: x['rank'])[:3]:
+                    diff_text = self._format_rank_diff_en(self._find_previous_item(old_data, item, data_key='movers'), item['rank'])
+                    summary_items.append({**item, 'diff_text': diff_text})
+                items_by_brand.append({'brand': brand, 'items': summary_items})
+
+        image_path = self._build_image_card('Amazon Beauty Move and Shakers Update', items_by_brand, footer_text=f'Total tracked brands: {len(brands)}')
+        caption = f'Amazon Beauty Move and Shakers Update • {len(brands)} brands'
         return image_path, caption
 
     def broadcast_message(self, text):
@@ -996,8 +1096,10 @@ class AmazonBestsellerTracker:
 
         if action in ['start', '시작']:
             self.add_chat_id(chat_id)
-            if not self.load_data():
-                if self.fetch_and_save_data():
+            has_bestseller = bool(self.load_data())
+            has_movers = bool(self.load_data(self.movers_data_file))
+            if not has_bestseller or not has_movers:
+                if self.fetch_and_save_all_data():
                     return self.send_telegram_message(chat_id, '✅ 알림 등록 및 초기 데이터 수집이 완료되었습니다. 6시간마다 순위 변동을 전송합니다.')
                 return self.send_telegram_message(chat_id, '⚠️ 초기 데이터 수집에 실패했습니다. 잠시 후 다시 시도해주세요.')
             return self.send_telegram_message(chat_id, '✅ 알림 등록이 완료되었습니다. 6시간마다 추적 브랜드 순위 변동을 전송합니다.')
@@ -1006,8 +1108,10 @@ class AmazonBestsellerTracker:
             if not argument:
                 return self.send_telegram_message(chat_id, '사용법: /add <브랜드> 또는 추가 <브랜드>')
             added = self.add_brand(argument)
-            if not self.load_data():
-                if self.fetch_and_save_data():
+            has_bestseller = bool(self.load_data())
+            has_movers = bool(self.load_data(self.movers_data_file))
+            if not has_bestseller or not has_movers:
+                if self.fetch_and_save_all_data():
                     pass
                 else:
                     return self.send_telegram_message(chat_id, '⚠️ 데이터 수집에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -1025,6 +1129,8 @@ class AmazonBestsellerTracker:
 
         if action in ['update', '업데이트']:
             self.update()
+
+            sent_any = False
             data = self.load_data()
             previous_data = self.load_data(self.previous_data_file)
             if data and data.get('bestsellers'):
@@ -1035,7 +1141,22 @@ class AmazonBestsellerTracker:
                 except Exception:
                     pass
                 if sent:
-                    return True
+                    sent_any = True
+
+            movers_data = self.load_data(self.movers_data_file)
+            previous_movers_data = self.load_data(self.previous_movers_data_file)
+            if movers_data and movers_data.get('movers'):
+                image_path, caption = self.build_movers_update_image(previous_movers_data, movers_data)
+                sent = self.send_telegram_photo(chat_id, image_path, caption)
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+                if sent:
+                    sent_any = True
+
+            if sent_any:
+                return True
             return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 완료했습니다. 추적 중인 브랜드 순위 변동을 전송했습니다.')
 
         if action in ['summary', '요약']:
@@ -1045,6 +1166,14 @@ class AmazonBestsellerTracker:
                     return self.send_telegram_message(chat_id, '🔍 데이터 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')
                 data = self.load_data()
 
+            movers_data = self.load_data(self.movers_data_file)
+            if not movers_data or not movers_data.get('movers'):
+                if not self.fetch_and_save_movers_data():
+                    return self.send_telegram_message(chat_id, '🔍 Move and Shakers 데이터 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')
+                movers_data = self.load_data(self.movers_data_file)
+
+            sent_any = False
+
             previous_data = self.load_data(self.previous_data_file)
             image_path, caption = self.build_summary_image(data, previous_data)
             sent = self.send_telegram_photo(chat_id, image_path, caption)
@@ -1052,9 +1181,25 @@ class AmazonBestsellerTracker:
                 os.remove(image_path)
             except Exception:
                 pass
-            if not sent:
-                return self.send_telegram_message(chat_id, self.build_summary_text())
-            return True
+            if sent:
+                sent_any = True
+
+            previous_movers_data = self.load_data(self.previous_movers_data_file)
+            image_path, caption = self.build_movers_summary_image(movers_data, previous_movers_data)
+            sent = self.send_telegram_photo(chat_id, image_path, caption)
+            try:
+                os.remove(image_path)
+            except Exception:
+                pass
+            if sent:
+                sent_any = True
+
+            if sent_any:
+                return True
+
+            text_summary = self.build_summary_text()
+            movers_summary = self.build_movers_summary_text()
+            return self.send_telegram_message(chat_id, f'{text_summary}\n\n{movers_summary}')
 
         if action in ['help', '도움', '도움말']:
             return self.send_telegram_message(chat_id, self.make_help_text())
@@ -1095,23 +1240,72 @@ class AmazonBestsellerTracker:
             return False
         return self.save_data(bestsellers)
 
+    def fetch_and_save_movers_data(self):
+        movers = self.fetch_movers_and_shakers()
+        if not movers:
+            return False
+        return self.save_data(
+            movers,
+            path=self.movers_data_file,
+            previous_path=self.previous_movers_data_file,
+            data_key='movers',
+        )
+
+    def fetch_and_save_all_data(self):
+        bestsellers_saved = self.fetch_and_save_data()
+        movers_saved = self.fetch_and_save_movers_data()
+        return bestsellers_saved or movers_saved
+
     def update(self):
-        logging.info('Updating bestseller data...')
-        previous_data = self.load_data(self.data_file)
+        logging.info('Updating bestseller and movers-and-shakers data...')
+
+        previous_bestseller_data = self.load_data(self.data_file)
         bestsellers = self.fetch_bestsellers()
+        bestseller_saved = False
         if bestsellers:
-            saved = self.save_data(bestsellers)
-            if saved:
-                logging.info(f'Successfully updated with {len(bestsellers)} products')
-                if self.state.get('chat_ids'):
-                    image_path, caption = self.build_update_image(previous_data, {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers})
-                    self.broadcast_photo(image_path, caption)
-                    try:
-                        os.remove(image_path)
-                    except Exception:
-                        pass
+            bestseller_saved = self.save_data(bestsellers)
+            if bestseller_saved:
+                logging.info(f'Successfully updated bestsellers with {len(bestsellers)} products')
         else:
-            logging.warning('Failed to update data')
+            logging.warning('Failed to update bestseller data')
+
+        previous_movers_data = self.load_data(self.movers_data_file)
+        movers = self.fetch_movers_and_shakers()
+        movers_saved = False
+        if movers:
+            movers_saved = self.save_data(
+                movers,
+                path=self.movers_data_file,
+                previous_path=self.previous_movers_data_file,
+                data_key='movers',
+            )
+            if movers_saved:
+                logging.info(f'Successfully updated movers and shakers with {len(movers)} products')
+        else:
+            logging.warning('Failed to update movers and shakers data')
+
+        if self.state.get('chat_ids'):
+            if bestseller_saved:
+                image_path, caption = self.build_update_image(
+                    previous_bestseller_data,
+                    {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers},
+                )
+                self.broadcast_photo(image_path, caption)
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+
+            if movers_saved:
+                image_path, caption = self.build_movers_update_image(
+                    previous_movers_data,
+                    {'timestamp': datetime.now().isoformat(), 'movers': movers},
+                )
+                self.broadcast_photo(image_path, caption)
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
 
     def start_auto_update(self):
         interval_hours = self.config.get('update_interval_hours', 6)

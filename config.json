@@ -1,8 +1,11 @@
 {
   "url": "https://www.amazon.com/Best-Sellers-Beauty-Personal-Care/zgbs/beauty",
+  "movers_url": "https://www.amazon.com/-/ko/gp/movers-and-shakers/beauty/ref=zg_bs_tab_t_beauty_bsms",
   "update_interval_hours": 6,
   "data_file": "data/bestsellers.json",
   "previous_data_file": "data/bestsellers_prev.json",
+  "movers_data_file": "data/movers.json",
+  "previous_movers_data_file": "data/movers_prev.json",
   "state_file": "data/state.json",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "use_browser": false,

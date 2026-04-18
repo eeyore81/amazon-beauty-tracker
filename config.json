@@ -1,0 +1,9 @@
+{
+  "url": "https://www.amazon.com/Best-Sellers-Beauty-Personal-Care/zgbs/beauty",
+  "update_interval_hours": 6,
+  "data_file": "data/bestsellers.json",
+  "previous_data_file": "data/bestsellers_prev.json",
+  "state_file": "data/state.json",
+  "telegram_bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+}

@@ -68,7 +68,7 @@ jobs:
           git config user.name "$GIT_AUTHOR_NAME"
           git config user.email "$GIT_AUTHOR_EMAIL"
           files_to_add=""
-          for f in data/bestsellers.json data/bestsellers_prev.json data/state.json; do
+          for f in data/bestsellers.json data/bestsellers_prev.json data/movers.json data/movers_prev.json data/state.json; do
             if [ -f "$f" ]; then
               files_to_add="$files_to_add $f"
             fi

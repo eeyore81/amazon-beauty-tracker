@@ -1350,7 +1350,10 @@ def run_ci_mode(tracker, args):
     logging.info(f'CI payload chat_id={chat_id!r}, text={text!r}, update_now={args.update_now}, serve={args.serve}, use_browser={tracker.config.get("use_browser")}')
 
     if args.update_now:
-        tracker.update()
+        if tracker.fetch_and_save_all_data():
+            logging.info('CI update successfully saved bestsellers and movers data.')
+        else:
+            logging.warning('CI update did not save both datasets.')
         return
 
     if text:

@@ -229,10 +229,13 @@ class AmazonBestsellerTracker:
         lines.append('\n추적 중인 브랜드: ' + ', '.join(brands))
         return '\n'.join(lines)
 
+    def get_telegram_token(self):
+        return os.getenv('TELEGRAM_BOT_TOKEN')
+
     def send_telegram_message(self, chat_id, text):
-        token = self.config.get('telegram_bot_token') or os.getenv('TELEGRAM_BOT_TOKEN')
-        if not token or token == 'YOUR_TELEGRAM_BOT_TOKEN':
-            logging.error('Telegram bot token is not configured. Set telegram_bot_token in config.json or TELEGRAM_BOT_TOKEN environment variable.')
+        token = self.get_telegram_token()
+        if not token:
+            logging.warning('Telegram bot token is not configured. Skipping Telegram notification.')
             return False
 
         url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -248,6 +251,10 @@ class AmazonBestsellerTracker:
             return False
 
     def broadcast_message(self, text):
+        if not self.get_telegram_token():
+            logging.warning('Telegram bot token missing. Broadcast skipped.')
+            return
+
         for chat_id in self.state.get('chat_ids', []):
             self.send_telegram_message(chat_id, text)
 

@@ -9,8 +9,11 @@ import argparse
 import json
 import logging
 import os
+import re
+import time
 from datetime import datetime
 from pathlib import Path
+import threading
 import requests
 from bs4 import BeautifulSoup
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -29,6 +32,7 @@ class AmazonBestsellerTracker:
         self.data_file.parent.mkdir(parents=True, exist_ok=True)
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         self.scheduler = BackgroundScheduler()
+        self.update_lock = threading.Lock()
         self.state = self.load_state()
 
     def _load_config(self, config_file):
@@ -48,7 +52,25 @@ class AmazonBestsellerTracker:
         with open(self.state_file, 'w', encoding='utf-8') as f:
             json.dump(self.state, f, ensure_ascii=False, indent=2)
 
+    def schedule_update(self, reason='manual'):
+        if self.update_lock.locked():
+            logging.info('Update already running; skipping duplicate request.')
+            return False
+
+        thread = threading.Thread(target=self._run_update_thread, args=(reason,), daemon=True)
+        thread.start()
+        return True
+
+    def _run_update_thread(self, reason):
+        logging.info(f'Background update started ({reason})')
+        with self.update_lock:
+            self.update()
+        logging.info(f'Background update finished ({reason})')
+
     def fetch_bestsellers(self):
+        if self.config.get('use_browser', False):
+            return self.fetch_bestsellers_with_browser()
+
         try:
             headers = {'User-Agent': self.config['user_agent']}
             url = self.config['url']
@@ -83,16 +105,83 @@ class AmazonBestsellerTracker:
             logging.error(f"Error fetching bestsellers: {e}")
             return None
 
+    def fetch_bestsellers_with_browser(self):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError as e:
+            logging.error(f"Browser automation dependencies missing: {e}")
+            return None
+
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                context = browser.new_context(
+                    user_agent=self.config['user_agent'],
+                    viewport={'width': 1920, 'height': 1080},
+                )
+                page = context.new_page()
+
+                items = []
+                seen_keys = set()
+                page_urls = [self.config['url']]
+                second_page_url = self.config.get('page_2_url')
+                if second_page_url:
+                    page_urls.append(second_page_url)
+                else:
+                    page_urls.append(f"{self.config['url']}?pg=2")
+
+                for page_index, page_url in enumerate(page_urls, start=1):
+                    logging.info(f'Browser loading page {page_index}: {page_url}')
+                    page.goto(page_url, timeout=30000)
+                    time.sleep(self.config.get('browser_initial_wait', 2))
+
+                    scroll_steps = self.config.get('browser_scroll_steps', 2)
+                    scroll_delay = self.config.get('browser_scroll_delay', 2)
+                    for _ in range(scroll_steps):
+                        page.evaluate('window.scrollTo(0, document.body.scrollHeight);')
+                        time.sleep(scroll_delay)
+
+                    html = page.content()
+                    soup = BeautifulSoup(html, 'lxml')
+                    page_items = self._parse_bestseller_items(soup)
+                    for item in page_items:
+                        key = item.get('asin') or item['title'].strip().lower()
+                        if key in seen_keys:
+                            continue
+                        seen_keys.add(key)
+                        items.append(item)
+                        if len(items) >= 100:
+                            break
+                    if len(items) >= 100:
+                        break
+
+                context.close()
+                browser.close()
+                return items[:100]
+        except Exception as e:
+            logging.error(f"Error fetching bestsellers with browser automation: {e}")
+            return None
+
     def _parse_bestseller_items(self, soup):
-        containers = soup.select(
-            'ol#zg-ordered-list li, div.zg-grid-general-faceout, li.zg-item-immersion, div.p13n-sc-uncoverable-faceout, div.s-result-item, div.zg_itemWrapper'
-        )
+        containers = soup.select('div.a-cardui._cDEzb_grid-cell_1uMOS.expandableGrid.p13n-grid-content')
+        if not containers:
+            containers = soup.select('div._cDEzb_grid-cell_1uMOS.expandableGrid.p13n-grid-content')
+        if not containers:
+            containers = soup.select('ol#zg-ordered-list > li')
+        if not containers:
+            containers = soup.select('li.zg-item-immersion, div.p13n-sc-uncoverable-faceout')
+        if not containers:
+            containers = soup.select('div.s-result-item, div.zg_itemWrapper')
 
         bestsellers = []
+        seen_ranks = set()
         for idx, item in enumerate(containers, 1):
             parsed = self._extract_item_info(item, idx)
             if not parsed:
                 continue
+            if parsed['rank'] in seen_ranks:
+                continue
+            seen_ranks.add(parsed['rank'])
             bestsellers.append(parsed)
             if len(bestsellers) >= 100:
                 break
@@ -103,17 +192,18 @@ class AmazonBestsellerTracker:
         asin = item.get('data-asin') or (item.select_one('[data-asin]') and item.select_one('[data-asin]').get('data-asin'))
 
         rank = None
-        rank_elem = item.select_one('span.zg-badge-text, span.a-badge-text, span.zg-badge-text, span.a-list-item, span._cDEzb_p13n-sc-price')
+        rank_elem = item.select_one('span.zg-bdg-text, span.zg-badge-text, span.a-badge-text, span.zg-badge-text, span.a-list-item, span._cDEzb_p13n-sc-price')
         if rank_elem:
-            rank_text = rank_elem.get_text(strip=True).replace('#', '').strip()
-            if rank_text.isdigit():
-                rank = int(rank_text)
+            rank_text = rank_elem.get_text(strip=True)
+            rank_digits = re.search(r'#?(\d{1,3})', rank_text)
+            if rank_digits:
+                rank = int(rank_digits.group(1))
         if rank is None:
             rank = default_rank
 
         title = None
         title_elem = item.select_one(
-            'img[alt], div.p13n-sc-truncate, div.p13n-sc-truncate-desktop-type2, span.a-size-medium, h2, a.a-link-normal > span, span.a-size-base-plus'
+            'div._cDEzb_p13n-sc-css-line-clamp-3_g3dy1, div.p13n-sc-truncate, div.p13n-sc-truncate-desktop-type2, span.a-size-medium, h2, a.a-link-normal > span, span.a-size-base-plus, img[alt]'
         )
         if title_elem:
             if title_elem.name == 'img':
@@ -369,14 +459,17 @@ class AmazonBestsellerTracker:
 
         if action in ['start', '시작']:
             self.add_chat_id(chat_id)
-            self.ensure_data_available()
+            if not self.load_data():
+                self.schedule_update('start')
+                return self.send_telegram_message(chat_id, '✅ 알림 등록이 완료되었습니다. 현재 데이터가 없어 업데이트를 시작했습니다. 완료되면 순위 변동을 전송합니다.')
             return self.send_telegram_message(chat_id, '✅ 알림 등록이 완료되었습니다. 6시간마다 추적 브랜드 순위 변동을 전송합니다.')
 
         if action in ['add', '추가']:
             if not argument:
                 return self.send_telegram_message(chat_id, '사용법: /add <브랜드> 또는 추가 <브랜드>')
-            self.ensure_data_available()
             added = self.add_brand(argument)
+            if not self.load_data():
+                self.schedule_update('add')
             if added:
                 return self.send_telegram_message(chat_id, f"✅ 브랜드 '{argument}' 이(가) 추적 목록에 추가되었습니다.")
             return self.send_telegram_message(chat_id, f"⚠️ 브랜드 '{argument}' 은(는) 이미 추적 중입니다.")
@@ -390,11 +483,14 @@ class AmazonBestsellerTracker:
             return self.send_telegram_message(chat_id, f"⚠️ 브랜드 '{argument}' 을(를) 찾을 수 없습니다.")
 
         if action in ['update', '업데이트']:
-            self.update()
-            return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 시작했습니다. 완료되면 추적 중인 브랜드 순위 변동을 전송합니다.')
+            self.schedule_update('telegram_update')
+            return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 예약했습니다. 완료되면 추적 중인 브랜드 순위 변동을 전송합니다.')
 
         if action in ['summary', '요약']:
-            self.ensure_data_available()
+            data = self.load_data()
+            if not data or not data.get('bestsellers'):
+                self.schedule_update('summary')
+                return self.send_telegram_message(chat_id, '🔍 현재 데이터가 없습니다. 업데이트를 시작했습니다. 완료되면 다시 /summary를 보내주세요.')
             return self.send_telegram_message(chat_id, self.build_summary_text())
 
         if action in ['help', '도움', '도움말']:
@@ -425,9 +521,9 @@ class AmazonBestsellerTracker:
         if data and data.get('bestsellers'):
             return data
 
-        logging.info('No bestseller data available. Running update now...')
-        self.update()
-        return self.load_data()
+        logging.info('No bestseller data available. Scheduling update now...')
+        self.schedule_update('ensure_data_available')
+        return None
 
     def update(self):
         logging.info('Updating bestseller data...')
@@ -469,6 +565,7 @@ def parse_args():
     parser.add_argument('--telegram-chat-id', dest='telegram_chat_id', help='Telegram chat id from CI event')
     parser.add_argument('--telegram-text', dest='telegram_text', help='Telegram text from CI event')
     parser.add_argument('--update-now', action='store_true', help='Run an immediate update')
+    parser.add_argument('--use-browser', action='store_true', help='Use Selenium browser automation to load dynamic items')
     return parser.parse_args()
 
 
@@ -476,7 +573,10 @@ def run_ci_mode(tracker, args):
     chat_id = args.telegram_chat_id or os.getenv('TELEGRAM_CHAT_ID')
     text = args.telegram_text or os.getenv('TELEGRAM_TEXT')
 
-    logging.info(f'CI payload chat_id={chat_id!r}, text={text!r}, update_now={args.update_now}, serve={args.serve}')
+    if args.use_browser:
+        tracker.config['use_browser'] = True
+
+    logging.info(f'CI payload chat_id={chat_id!r}, text={text!r}, update_now={args.update_now}, serve={args.serve}, use_browser={tracker.config.get("use_browser")}')
 
     if args.update_now:
         tracker.update()

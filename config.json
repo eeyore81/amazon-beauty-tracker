@@ -4,5 +4,9 @@
   "data_file": "data/bestsellers.json",
   "previous_data_file": "data/bestsellers_prev.json",
   "state_file": "data/state.json",
-  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "use_browser": false,
+  "browser_initial_wait": 2,
+  "browser_scroll_steps": 2,
+  "browser_scroll_delay": 2
 }

@@ -390,6 +390,8 @@ def run_ci_mode(tracker, args):
     chat_id = args.telegram_chat_id or os.getenv('TELEGRAM_CHAT_ID')
     text = args.telegram_text or os.getenv('TELEGRAM_TEXT')
 
+    logging.info(f'CI payload chat_id={chat_id!r}, text={text!r}, update_now={args.update_now}, serve={args.serve}')
+
     if args.update_now:
         tracker.update()
         return

@@ -557,7 +557,40 @@ class AmazonBestsellerTracker:
 
         return None
 
+    def _is_product_image_candidate(self, img, src):
+        if not img or img.name != 'img' or not src:
+            return False
+
+        if src.lower().endswith('.gif'):
+            return False
+
+        alt_text = (img.get('alt') or '').strip()
+        if alt_text and len(alt_text.split()) < 6 and re.search(r'\b(arrow|up|down|increase|decrease|green|red|blue|yellow|icon|badge|overlay)\b', alt_text, re.I):
+            return False
+
+        classes = ' '.join(img.get('class', [])).lower()
+        if any(token in classes for token in ('s-image', 'a-dynamic-image', 'p13n-sc-image', 'a-image', 'a-lazy-image')):
+            return True
+
+        if '/images/I/' in src.lower() and not src.lower().endswith('.gif'):
+            return True
+
+        return False
+
     def _extract_image_url(self, item):
+        best_candidate = None
+        for img in item.select('img'):
+            src = self._get_image_src(img)
+            if not src:
+                continue
+            if self._is_product_image_candidate(img, src):
+                return src
+            if not best_candidate and not src.lower().endswith('.gif'):
+                best_candidate = src
+
+        if best_candidate:
+            return best_candidate
+
         image_elem = item.select_one('img.s-image') or item.select_one('img[alt]') or item.select_one('img')
         return self._get_image_src(image_elem)
 

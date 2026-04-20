@@ -1183,6 +1183,7 @@ class AmazonBestsellerTracker:
         return False
 
     def handle_telegram_command(self, chat_id, text):
+        self.add_chat_id(chat_id)
         command = text.strip()
         if not command:
             return self.send_telegram_message(chat_id, self.make_help_text())
@@ -1226,23 +1227,7 @@ class AmazonBestsellerTracker:
 
         if action in ['update', '업데이트']:
             self.update()
-
-            data = self.load_data()
-            previous_data = self.load_data(self.previous_data_file)
-            movers_data = self.load_data(self.movers_data_file)
-            previous_movers_data = self.load_data(self.previous_movers_data_file)
-
-            if data and data.get('bestsellers') and movers_data and movers_data.get('movers'):
-                image_path, caption = self.build_combined_summary_image(data, movers_data, previous_data, previous_movers_data)
-                sent = self.send_telegram_photo(chat_id, image_path, caption)
-                try:
-                    os.remove(image_path)
-                except Exception:
-                    pass
-                if sent:
-                    return True
-
-            return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 완료했습니다. 추적 중인 브랜드 순위 변동을 전송했습니다.')
+            return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 완료했습니다. 등록된 모든 채팅에 요약을 방송했습니다.')
 
         if action in ['summary', '요약']:
             data = self.load_data()
@@ -1332,7 +1317,7 @@ class AmazonBestsellerTracker:
         movers_saved = self.fetch_and_save_movers_data()
         return bestsellers_saved or movers_saved
 
-    def update(self):
+    def update(self, broadcast=True):
         logging.info('Updating bestseller and movers-and-shakers data...')
 
         previous_bestseller_data = self.load_data(self.data_file)
@@ -1360,7 +1345,7 @@ class AmazonBestsellerTracker:
         else:
             logging.warning('Failed to update movers and shakers data')
 
-        if self.state.get('chat_ids') and (bestseller_saved or movers_saved):
+        if broadcast and self.state.get('chat_ids') and (bestseller_saved or movers_saved):
             current_bestseller_data = {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers} if bestsellers else self.load_data() or {}
             current_movers_data = {'timestamp': datetime.now().isoformat(), 'movers': movers} if movers else self.load_data(self.movers_data_file) or {}
             image_path, caption = self.build_combined_summary_image(

@@ -1227,33 +1227,21 @@ class AmazonBestsellerTracker:
         if action in ['update', '업데이트']:
             self.update()
 
-            sent_any = False
             data = self.load_data()
             previous_data = self.load_data(self.previous_data_file)
-            if data and data.get('bestsellers'):
-                image_path, caption = self.build_update_image(previous_data, data)
-                sent = self.send_telegram_photo(chat_id, image_path, caption)
-                try:
-                    os.remove(image_path)
-                except Exception:
-                    pass
-                if sent:
-                    sent_any = True
-
             movers_data = self.load_data(self.movers_data_file)
             previous_movers_data = self.load_data(self.previous_movers_data_file)
-            if movers_data and movers_data.get('movers'):
-                image_path, caption = self.build_movers_update_image(previous_movers_data, movers_data)
+
+            if data and data.get('bestsellers') and movers_data and movers_data.get('movers'):
+                image_path, caption = self.build_combined_summary_image(data, movers_data, previous_data, previous_movers_data)
                 sent = self.send_telegram_photo(chat_id, image_path, caption)
                 try:
                     os.remove(image_path)
                 except Exception:
                     pass
                 if sent:
-                    sent_any = True
+                    return True
 
-            if sent_any:
-                return True
             return self.send_telegram_message(chat_id, '🔄 즉시 업데이트를 완료했습니다. 추적 중인 브랜드 순위 변동을 전송했습니다.')
 
         if action in ['summary', '요약']:
@@ -1372,28 +1360,20 @@ class AmazonBestsellerTracker:
         else:
             logging.warning('Failed to update movers and shakers data')
 
-        if self.state.get('chat_ids'):
-            if bestseller_saved:
-                image_path, caption = self.build_update_image(
-                    previous_bestseller_data,
-                    {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers},
-                )
-                self.broadcast_photo(image_path, caption)
-                try:
-                    os.remove(image_path)
-                except Exception:
-                    pass
-
-            if movers_saved:
-                image_path, caption = self.build_movers_update_image(
-                    previous_movers_data,
-                    {'timestamp': datetime.now().isoformat(), 'movers': movers},
-                )
-                self.broadcast_photo(image_path, caption)
-                try:
-                    os.remove(image_path)
-                except Exception:
-                    pass
+        if self.state.get('chat_ids') and (bestseller_saved or movers_saved):
+            current_bestseller_data = {'timestamp': datetime.now().isoformat(), 'bestsellers': bestsellers} if bestsellers else self.load_data() or {}
+            current_movers_data = {'timestamp': datetime.now().isoformat(), 'movers': movers} if movers else self.load_data(self.movers_data_file) or {}
+            image_path, caption = self.build_combined_summary_image(
+                current_bestseller_data,
+                current_movers_data,
+                previous_bestseller_data,
+                previous_movers_data,
+            )
+            self.broadcast_photo(image_path, caption)
+            try:
+                os.remove(image_path)
+            except Exception:
+                pass
 
     def start_auto_update(self):
         interval_hours = self.config.get('update_interval_hours', 6)
@@ -1438,10 +1418,8 @@ def run_ci_mode(tracker, args):
     logging.info(f'CI payload chat_id={chat_id!r}, text={text!r}, update_now={args.update_now}, serve={args.serve}, use_browser={tracker.config.get("use_browser")}')
 
     if args.update_now:
-        if tracker.fetch_and_save_all_data():
-            logging.info('CI update successfully saved bestsellers and movers data.')
-        else:
-            logging.warning('CI update did not save both datasets.')
+        tracker.update()
+        logging.info('CI update executed through tracker.update().')
         return
 
     if text:

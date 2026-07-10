@@ -1,73 +1,73 @@
 {
-  "timestamp": "2026-07-10T13:57:42.265203",
+  "timestamp": "2026-07-10T19:15:24.932194",
   "bestsellers": [
     {
       "rank": 1,
       "title": "medicube Toner Pads Zero Pore Pad 2.0 | Dual-Textured Facial Pad for Exfoliation and Pore Care with 4.5% AHA Lactic Acid, 0.45% BHA Salicylic Acid | Ideal for All, Korean Skin Care, 70 Pads (1 Pack)",
-      "price": "$18.90",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
-      "reviews": "27,084",
+      "reviews": "27,087",
       "asin": "B09V7Z4TJG",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71Mcspt-6AL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 2,
       "title": "Amazon Basics Double-Tipped Cotton Swabs for Personal Hygiene and Baby Care, Cotton, Versatile, Baby Safe, 500 Count",
-      "price": "$2.64",
+      "price": "N/A",
       "rating": "4.7 out of 5 stars",
-      "reviews": "77,238",
+      "reviews": "77,237",
       "asin": "B09541P9WH",
       "image": "https://images-na.ssl-images-amazon.com/images/I/612HeyYXOnL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 3,
       "title": "eos Shea Better Body Lotion Vanilla Cashmere, 24-Hour Moisture Skin Care, Lightweight & Non-Greasy, Natural Shea, Vegan, Vanilla Body Lotion, 16 fl oz",
-      "price": "$9.97",
+      "price": "N/A",
       "rating": "4.7 out of 5 stars",
-      "reviews": "76,090",
+      "reviews": "76,098",
       "asin": "B08KT2Z93D",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61IQUadfGEL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 4,
       "title": "Mighty Patch Hero Cosmetics Original Nighttime Acne Pimple Patches, 36 Ct | #1 Hydrocolloid Acne Patches, Shrinking Zits & Whiteheads in 1 Use, Spot Treatment, Pimple Stickers for Face",
-      "price": "$12.99",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
-      "reviews": "184,563",
+      "reviews": "184,566",
       "asin": "B074PVTPBW",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61p+1+md+8L._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 5,
       "title": "BIODANCE Bio-Collagen Real Deep Mask, Hydrating Overnight Hydrogel Face Mask, Pore Minimizing, Elasticity, Plumping, Travel Essentials & Self Care Gifts for Women, Korean Skin Care | 1.19oz(34g) x 4ea",
-      "price": "$17.10",
+      "price": "N/A",
       "rating": "4.5 out of 5 stars",
-      "reviews": "42,523",
+      "reviews": "42,528",
       "asin": "B0B2RM68G2",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51ubxqzNGIL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 6,
       "title": "Neutrogena Makeup Remover Micellar Wipes for Face Daily Gently Removes Oil Dirt and Waterproof Makeup in a Simple Fully Plant-Based Cloth, 2 pack of 25 ct",
-      "price": "$9.97",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
-      "reviews": "120,157",
+      "reviews": "120,160",
       "asin": "B00U2VQZDS",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71JnbwZyFoL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 7,
       "title": "The Ordinary Glycolic Acid 7% Exfoliating Toner, Brightening and Smoothing Daily Toner for More Even-Looking Skin Tone",
-      "price": "$13.50",
+      "price": "N/A",
       "rating": "4.7 out of 5 stars",
-      "reviews": "55,876",
+      "reviews": "55,879",
       "asin": "B071914GGL",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51bC4vVdkOL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 8,
       "title": "Amazon Basics Hypoallergenic Cotton Rounds for Makeup Removal and Skincare, 100 Count, 1 Pack",
-      "price": "$3.21",
+      "price": "N/A",
       "rating": "4.7 out of 5 stars",
       "reviews": "51,891",
       "asin": "B09542G9ZN",
@@ -76,25 +76,25 @@
     {
       "rank": 9,
       "title": "PanOxyl 10% Benzoyl Peroxide Acne Foaming Wash, Maximum Strength, Daily Acne-Fighting Face and Body Cleanser, Face Wash to Clear, Treat and Prevent Acne Pimples and Stubborn Breakouts, 5.5 Oz Tube",
-      "price": "$10.67",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
-      "reviews": "81,800",
+      "reviews": "81,799",
       "asin": "B081KL2QYJ",
       "image": "https://images-na.ssl-images-amazon.com/images/I/713tzBRSP+L._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 10,
       "title": "Amazon Basics Gentle & Mild Clear Liquid Hand Soap Refill, Triclosan-Free, Dermatologist-Tested, pH Balanced, Cruelty-Free, 50 Fluid Ounces, 1-Pack (Previously Solimo)",
-      "price": "$3.82",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
-      "reviews": "44,416",
+      "reviews": "44,418",
       "asin": "B09HHDHXWX",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61F5elwBZYL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 11,
       "title": "Mrs. Meyer's Clean Day, Hand Soap Refill, Lavender Scent, 33 Fl Oz",
-      "price": "$8.69",
+      "price": "N/A",
       "rating": "4.7 out of 5 stars",
       "reviews": "92,850",
       "asin": "B00262227E",
@@ -103,25 +103,25 @@
     {
       "rank": 12,
       "title": "Clean Skin Club Clean Towels XL®, 100% USDA Biobased Face Towel, Disposable Face Towelette, Eczema Association Accepted, Makeup Remover Dry Wipes, Ultra Soft, 1 Pack, 50 Ct",
-      "price": "$17.95",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
-      "reviews": "44,167",
+      "reviews": "44,168",
       "asin": "B07PBXXNCY",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61Cn1ooILhL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 13,
       "title": "Maybelline Lash Sensational Sky High Washable Mascara Makeup, Volumizing, Lengthening, Defining, Curling, Multiplying, Buildable Formula, Blackest Black, 1 Count",
-      "price": "$10.82",
+      "price": "N/A",
       "rating": "4.5 out of 5 stars",
-      "reviews": "185,434",
+      "reviews": "185,435",
       "asin": "B08H3JPH74",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71MQo8pHmBL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 14,
       "title": "Blue Lizard Sensitive Mineral SPF 50 Sunscreen Lotion, 100% Mineral Sunscreen, UVA/UVB Protection, Infused with organic Aloe Vera, Soothes and Hydrates, 5 fl oz",
-      "price": "$14.69",
+      "price": "N/A",
       "rating": "4.5 out of 5 stars",
       "reviews": "15,609",
       "asin": "B084ZP848Y",
@@ -130,25 +130,25 @@
     {
       "rank": 15,
       "title": "eos Body Wash, Vanilla, Moisturizing Creamy Gel Formula with Shea Butter, Glycerin, Vitamin E, pH Balanced, Sensitive Skin, Vegan, 16 fl oz",
-      "price": "$9.98",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
-      "reviews": "20,153",
+      "reviews": "20,156",
       "asin": "B0DPHQRLJC",
       "image": "https://images-na.ssl-images-amazon.com/images/I/715Se8v8DWL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 16,
       "title": "EltaMD UV Clear Face Sunscreen SPF, Oil-Free Sunscreen with Zinc Oxide, Dermatologist Recommended",
-      "price": "$45.00",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
-      "reviews": "47,897",
+      "reviews": "47,898",
       "asin": "B002MSN3QQ",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71aXlh7do4L._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 17,
       "title": "Amazon Basics Epsom Salt Soak, Unscented, Magnesium Sulfate USP, Muscle and Feet Relaxation, Resealable Bag, 3 Pound",
-      "price": "$3.35",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
       "reviews": "17,255",
       "asin": "B0BXTS6L35",
@@ -157,7 +157,7 @@
     {
       "rank": 18,
       "title": "Nizoral Anti-Dandruff Shampoo with 1% Ketoconazole, Fresh Scent, 7 Fl Oz",
-      "price": "$15.88",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
       "reviews": "111,288",
       "asin": "B00AINMFAC",
@@ -166,16 +166,16 @@
     {
       "rank": 19,
       "title": "celimax The Vita A Retinal Shot Tightening Booster | 0.1% Retinal, 3% Matryxyl, High-Strength Retinoid for Anti-Aging, Pore Minimizer, Wrinkles & Fine Lines, Firmer Skin, 15ml, Korean Skin Care Gift",
-      "price": "$18.00",
+      "price": "N/A",
       "rating": "4.4 out of 5 stars",
-      "reviews": "18,266",
+      "reviews": "18,267",
       "asin": "B0DK4Y2YP3",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51utpRckeQL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 20,
       "title": "Neutrogena Makeup Remover Towelettes for Face with Micellar Water Daily Alcohol-Free Gently Removes Oil Dirt and Waterproof Makeup in a Simple Fully Plant-Based Cloth, 25 ct",
-      "price": "$5.69",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
       "reviews": "73,690",
       "asin": "B07GKVBQDG",
@@ -184,7 +184,7 @@
     {
       "rank": 21,
       "title": "Naturium The Glow Getter Multi-Oil Hydrating Body Wash, Gentle Cleanser, 16.9 oz",
-      "price": "$14.44",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
       "reviews": "7,184",
       "asin": "B0B1PDDLGZ",
@@ -193,16 +193,16 @@
     {
       "rank": 22,
       "title": "essence | Lash Princess False Lash Effect Mascara | Volumizing & Lengthening | Cruelty Free & Paraben Free",
-      "price": "$4.84",
+      "price": "N/A",
       "rating": "4.3 out of 5 stars",
-      "reviews": "415,269",
+      "reviews": "415,273",
       "asin": "B00T0C9XRK",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61K6cQhw4EL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 23,
       "title": "Toleriane Double Repair Face Moisturizer, Daily Moisturizer Face Cream with Ceramide and Niacinamide for All Skin Types",
-      "price": "$24.99",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
       "reviews": "50,140",
       "asin": "B01N9SPQHQ",
@@ -211,7 +211,7 @@
     {
       "rank": 24,
       "title": "Native Deodorant Contains Naturally Derived Ingredients, 72 Hour Odor Control, Deodorant for Women and Men, Aluminum Free, Coconut & Vanilla 2.65oz",
-      "price": "$12.47",
+      "price": "N/A",
       "rating": "4.4 out of 5 stars",
       "reviews": "115,127",
       "asin": "B07GB3NVN1",
@@ -220,16 +220,16 @@
     {
       "rank": 25,
       "title": "MRS. MEYER'S CLEAN DAY Hand Soap, Lemon Verbena Scent, 12.5 Fl Oz Bottle - 3 Pack",
-      "price": "$13.42",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
-      "reviews": "111,562",
+      "reviews": "111,563",
       "asin": "B00NU9MJYS",
       "image": "https://images-na.ssl-images-amazon.com/images/I/81gMooeJ0iL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 26,
       "title": "Banana Boat Sport Ultra SPF 50 Sunscreen Spray | Banana Boat Sunscreen Spray SPF 50, Water Resistant, Oxybenzone Free, Sunblock, 6oz each Twin Pack",
-      "price": "$13.86",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
       "reviews": "25,965",
       "asin": "B01MQXX9US",
@@ -238,7 +238,7 @@
     {
       "rank": 27,
       "title": "Vanicream Daily Facial Moisturizer With Ceramides and Hyaluronic Acid - Formulated Without Common Irritants for Those with Sensitive Skin, 3 fl oz (Pack of 1)",
-      "price": "$13.97",
+      "price": "N/A",
       "rating": "4.6 out of 5 stars",
       "reviews": "24,549",
       "asin": "B08BW46XXK",
@@ -246,60 +246,51 @@
     },
     {
       "rank": 28,
-      "title": "e.l.f. Instant Lift Brow Pencil, Dual-Sided, Precise, Fine Tip, Shapes, Defines, Fills Brows, Contours, Combs, Tames, Blonde, 0.006 Oz",
-      "price": "$3.00",
-      "rating": "4.5 out of 5 stars",
-      "reviews": "70,340",
-      "asin": "B07PBQZ3KF",
-      "image": "https://images-na.ssl-images-amazon.com/images/I/51q4yBqcL0L._AC_UL600_SR600,400_.jpg"
-    },
-    {
-      "rank": 29,
       "title": "Salt & Stone Aluminum Free Deodorant | Extra Strength 48 Hour Protection for Women & Men | Made with Seaweed Extracts, Niacinamide & Prebiotics | Santal & Vetiver",
-      "price": "$20.00",
+      "price": "N/A",
       "rating": "4.1 out of 5 stars",
-      "reviews": "16,958",
+      "reviews": "16,960",
       "asin": "B08WYXNVQ7",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51ZgUfRut6L._AC_UL600_SR600,400_.jpg"
     },
     {
-      "rank": 30,
+      "rank": 29,
       "title": "Dove Body Wash Deep Moisture for 24hr Lotion-Soft Skin Moisture Moisturizing Skin Cleanser with No Sulfates No Parabens 30.6 oz",
-      "price": "$10.97",
+      "price": "N/A",
       "rating": "4.8 out of 5 stars",
       "reviews": "85,388",
       "asin": "B00MEDOY2G",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71JxjmbExxL._AC_UL600_SR600,400_.jpg"
     },
     {
-      "rank": 31,
+      "rank": 30,
       "title": "Kitsch Dermaplane Razor for Women Face – Face Razors for Women & Men, Eye Brow Razors & Face Shaver – Exfoliating Facial Razor & Dermaplaner as Skin Care Tool for Smoother Skin - Terracotta, 12 pcs",
-      "price": "$7.19",
+      "price": "N/A",
       "rating": "4.4 out of 5 stars",
       "reviews": "36,431",
       "asin": "B08V3JGB1F",
-      "image": "https://images-na.ssl-images-amazon.com/images/I/81CtXhDOXSL._AC_UL300_SR300,200_.jpg"
+      "image": "https://images-na.ssl-images-amazon.com/images/I/81CtXhDOXSL._AC_UL600_SR600,400_.jpg"
     },
     {
-      "rank": 32,
+      "rank": 31,
       "title": "CeraVe Daily Moisturizing Lotion for Dry Skin, Body Lotion & Face Moisturizer with Hyaluronic Acid and Ceramides, Daily Moisturizer, Fragrance Free, Oil-Free, 19 Ounce",
       "price": "$18.14",
       "rating": "4.7 out of 5 stars",
-      "reviews": "148,822",
+      "reviews": "148,823",
       "asin": "B07RK4HST7",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71llkeOBhgL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 33,
+      "rank": 32,
       "title": "The Ordinary Niacinamide 10% + Zinc 1%, Smoothing Serum for Blemish-Prone Skin",
       "price": "$6.00",
       "rating": "4.7 out of 5 stars",
-      "reviews": "59,859",
+      "reviews": "59,862",
       "asin": "B01MDTVZTZ",
       "image": "https://images-na.ssl-images-amazon.com/images/I/612NxRjAoCL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 34,
+      "rank": 33,
       "title": "Vanicream Gentle Facial Cleanser with Pump Dispenser - 8 fl oz - Formulated Without Common Irritants for Those with Sensitive Skin",
       "price": "$9.97",
       "rating": "4.7 out of 5 stars",
@@ -308,7 +299,7 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/611NyPcyZtL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 35,
+      "rank": 34,
       "title": "Gillette Venus Sensitive Women's Disposable Razors - Single Package of 3 Razors",
       "price": "$6.94",
       "rating": "4.7 out of 5 stars",
@@ -317,25 +308,25 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/8147TWDgS5L._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 36,
+      "rank": 35,
       "title": "CeraVe Hydrating Facial Cleanser, Moisturizing Face Wash For Dry Skin, Hyaluronic Acid + Ceramides + Glycerin, Hydrating Cleanser For Normal To Dry Skin, National Eczema Association Certified, 16 Oz",
       "price": "$15.97",
       "rating": "4.7 out of 5 stars",
-      "reviews": "131,517",
+      "reviews": "131,519",
       "asin": "B01MSSDEPK",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71V-hFCug0L._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 37,
+      "rank": 36,
       "title": "CeraVe Foaming Facial Cleanser, Daily Face Wash for Oily Skin, Hyaluronic Acid + Ceramides + Niacinamide, Fragrance Free, Non-Drying Oil Control Face Wash, 16 Fluid Ounces",
-      "price": "$15.97",
+      "price": "$15.27",
       "rating": "4.8 out of 5 stars",
-      "reviews": "103,002",
+      "reviews": "103,003",
       "asin": "B01N1LL62W",
       "image": "https://images-na.ssl-images-amazon.com/images/I/516r6ghtxaL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 38,
+      "rank": 37,
       "title": "CeraVe Moisturizing Cream, Body and Face Moisturizer for Dry Skin, Body Cream with Hyaluronic Acid and Ceramides, Daily Moisturizer, Oil-Free, Fragrance Free, Non-Comedogenic, 19 Ounce",
       "price": "$18.96",
       "rating": "4.7 out of 5 stars",
@@ -344,7 +335,7 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/61EidjXUBrL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 39,
+      "rank": 38,
       "title": "Softsoap Antibacterial Liquid Hand Soap, Kitchen and Bathroom Hand Soap, White Tea and Berry Scent, 50 fl oz Refill",
       "price": "$5.97",
       "rating": "4.6 out of 5 stars",
@@ -353,7 +344,7 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/71dOBNh0ThL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 40,
+      "rank": 39,
       "title": "Nutrafol Women's Balance Hair Growth Supplements, Ages 45 and Up, Clinically Tested for Visibly Thicker Hair and Scalp Coverage, Dermatologist Recommended - 1 Month Supply",
       "price": "$88.00",
       "rating": "4.2 out of 5 stars",
@@ -362,7 +353,7 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/71x3lKqI-cL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 41,
+      "rank": 40,
       "title": "The Ordinary Hyaluronic Acid 2% + B5 (with Ceramides), Multi-Depth Hydration Serum for Plumper, Smoother Skin",
       "price": "$9.90",
       "rating": "4.7 out of 5 stars",
@@ -371,38 +362,47 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/61Se8Z9n4oL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 42,
+      "rank": 41,
       "title": "Degree Men UltraClear Antiperspirant Deodorant Black+White 2 Count 72-Hour Sweat & Odor Protection Antiperspirant For Men With MotionSense Technology 2.7 oz",
       "price": "$7.98",
       "rating": "4.7 out of 5 stars",
-      "reviews": "41,874",
+      "reviews": "41,875",
       "asin": "B075JRT85B",
       "image": "https://images-na.ssl-images-amazon.com/images/I/81CbbuR+fkL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 43,
+      "rank": 42,
       "title": "Dove Body Wash with Pump Sensitive Skin For 24hr Lotion-Soft Skin Moisturizing Skin Cleanser Gentle Hypoallergenic Formula with No Sulfates No Parabens 30.6 oz",
       "price": "$10.97",
       "rating": "4.8 out of 5 stars",
-      "reviews": "63,019",
+      "reviews": "63,020",
       "asin": "B00SK71SAG",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71vLZ3O63vL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 44,
+      "rank": 43,
       "title": "Revlon ColorStay Pencil Waterproof Eyeliner, Smudge-Proof, Eye Makeup with Built-In Sharpener, Long-Lasting, Matte Finish, 201 Black, 2 pack",
       "price": "$11.38",
       "rating": "4.5 out of 5 stars",
-      "reviews": "51,487",
+      "reviews": "51,488",
       "asin": "B01J1A3TFW",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71ZinfmfzKL._AC_UL300_SR300,200_.jpg"
+    },
+    {
+      "rank": 44,
+      "title": "e.l.f. Instant Lift Brow Pencil, Dual-Sided, Precise, Fine Tip, Shapes, Defines, Fills Brows, Contours, Combs, Tames, Blonde, 0.006 Oz",
+      "price": "$3.00",
+      "rating": "4.5 out of 5 stars",
+      "reviews": "70,340",
+      "asin": "B07PBQZ3KF",
+      "image": "https://images-na.ssl-images-amazon.com/images/I/51q4yBqcL0L._AC_UL300_SR300,200_.jpg"
     },
     {
       "rank": 45,
       "title": "Dr.Althea 345 Relief Cream | PDRN & Hyaluronic Acid for Hydration, Blemish Care | Post-Acne Face Moisturizer with Centella & Niacinamide | Korean Vegan Skincare, 1.69 Fl Oz (Ver.2 - Pack of 1)",
       "price": "$27.00",
       "rating": "4.6 out of 5 stars",
-      "reviews": "18,900",
+      "reviews": "18,901",
       "asin": "B0FKGJYFC8",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51dWGrl3-dL._AC_UL300_SR300,200_.jpg"
     },
@@ -411,7 +411,7 @@
       "title": "medicube PDRN Pink Peptide Serum with Salmon DNA | Pink Glow Serum with Peptides & Niacinamide for Hydration & Firm-Looking Skin | Uneven Tone Care | Korean Skincare, 1.01 fl. Oz",
       "price": "$18.90",
       "rating": "4.7 out of 5 stars",
-      "reviews": "17,631",
+      "reviews": "17,632",
       "asin": "B0DBF65JYY",
       "image": "https://images-na.ssl-images-amazon.com/images/I/615DOoCI6xL._AC_UL300_SR300,200_.jpg"
     },
@@ -420,7 +420,7 @@
       "title": "MEDITHERAPY Retinal Skin Booster Serum 5.07 fl oz | Retinaldehyde, Niacinamide, Cica | Korean Hydrating Face & Body Serum for Dull, Uneven Skin, All Skin Types, K-Beauty",
       "price": "$19.99",
       "rating": "4.4 out of 5 stars",
-      "reviews": "6,942",
+      "reviews": "6,953",
       "asin": "B0DG4WXBCF",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61fuHSbuE2L._AC_UL300_SR300,200_.jpg"
     },
@@ -429,7 +429,7 @@
       "title": "medicube Collagen Jelly Cream- Niacinamide & Freeze-Dried Hydrolyzed Collagen - Boosts skin's barrier hydration and gives 24h Glow & Lifted Look - Korean skincare (1.69 Fl Oz (Pack of 1))",
       "price": "$14.90",
       "rating": "4.4 out of 5 stars",
-      "reviews": "29,636",
+      "reviews": "29,640",
       "asin": "B0DGPSZVW3",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61aDluwKSxL._AC_UL300_SR300,200_.jpg"
     },
@@ -444,21 +444,21 @@
     },
     {
       "rank": 50,
-      "title": "Secret Clinical Strength Invisible Solid Antiperspirant Deodorant for Women, 100HR Sweat & Odor Protection, 3X Stress Protection with Hyaluronic Acid, PH Balanced, Completely Clean Scent, 2.6 oz",
-      "price": "$13.97",
-      "rating": "4.6 out of 5 stars",
-      "reviews": "26,421",
-      "asin": "B00HF3XSO0",
-      "image": "https://images-na.ssl-images-amazon.com/images/I/81zlQ5MU0SL._AC_UL300_SR300,200_.jpg"
-    },
-    {
-      "rank": 51,
       "title": "Tree Hut Vanilla Body Scrub, Exfoliating & Hydrating Sugar Scrub with Shea Butter & Essential Oils, Smooth Skin, Body Exfoliator For All Skin Types, Self Care Gifts for Women, Vegan, 18 Oz",
       "price": "$8.94",
       "rating": "4.7 out of 5 stars",
       "reviews": "6,815",
       "asin": "B0BX2TZZWG",
-      "image": "https://images-na.ssl-images-amazon.com/images/I/61VUBV04PzL._AC_UL600_SR600,400_.jpg"
+      "image": "https://images-na.ssl-images-amazon.com/images/I/61VUBV04PzL._AC_UL300_SR300,200_.jpg"
+    },
+    {
+      "rank": 51,
+      "title": "Secret Clinical Strength Invisible Solid Antiperspirant Deodorant for Women, 100HR Sweat & Odor Protection, 3X Stress Protection with Hyaluronic Acid, PH Balanced, Completely Clean Scent, 2.6 oz",
+      "price": "$13.97",
+      "rating": "4.6 out of 5 stars",
+      "reviews": "26,422",
+      "asin": "B00HF3XSO0",
+      "image": "https://images-na.ssl-images-amazon.com/images/I/81zlQ5MU0SL._AC_UL600_SR600,400_.jpg"
     },
     {
       "rank": 52,
@@ -474,7 +474,7 @@
       "title": "Neutrogena Beach Defense Sunscreen Spray SPF 70 Broad Spectrum UVA UVB Protection Lightweight Water Resistant up to 80 Minutes Beach-Strength Sun Protection for Whole Family, 6.5 oz",
       "price": "$9.39",
       "rating": "4.7 out of 5 stars",
-      "reviews": "9,248",
+      "reviews": "9,249",
       "asin": "B00ANL8QHA",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61w72VmXgBL._AC_UL600_SR600,400_.jpg"
     },
@@ -492,7 +492,7 @@
       "title": "grace & stella Award Winning Under Eye Mask - Birthday Gifts for Women - Gel Eye Patches for Dark Circles, Puffy Eyes, Undereye Bags - Gifts for Mom - Vegan Self Care (24 Pairs, Gold)",
       "price": "$20.15",
       "rating": "4.4 out of 5 stars",
-      "reviews": "47,918",
+      "reviews": "47,919",
       "asin": "B014E2D6BY",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71ctIB+-LxL._AC_UL600_SR600,400_.jpg"
     },
@@ -501,7 +501,7 @@
       "title": "Garnier Micellar Water, Hydrating Facial Cleanser & Makeup Remover, Suitable for Sensitive Skin, Vegan, Cruelty Free, 13.5 Fl Oz (400mL), 1 Count",
       "price": "$8.82",
       "rating": "4.7 out of 5 stars",
-      "reviews": "73,678",
+      "reviews": "73,680",
       "asin": "B017PCGABI",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61qrHCKF0jL._AC_UL600_SR600,400_.jpg"
     },
@@ -510,7 +510,7 @@
       "title": "Dr.Melaxin Collagen Multi Balm Stick, Calcium & Adenosine Korean Wrinkle Stick for Eye, Neck & Face, Firming Collagen Stick, Under Eye Balm for Dark Circles & Depuffing, Korean Skin Care, 0.31 oz",
       "price": "$19.00",
       "rating": "4.1 out of 5 stars",
-      "reviews": "7,347",
+      "reviews": "7,349",
       "asin": "B0CNCL35CH",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71kAOJhR9WL._AC_UL600_SR600,400_.jpg"
     },
@@ -519,7 +519,7 @@
       "title": "Q-tips Cotton Swabs For Hygiene and Beauty Care Original Cotton Swab Made With 100% Cotton 750 Count",
       "price": "$5.37",
       "rating": "4.9 out of 5 stars",
-      "reviews": "18,721",
+      "reviews": "18,722",
       "asin": "B00J4YYFYA",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71ON1meCGlL._AC_UL600_SR600,400_.jpg"
     },
@@ -528,7 +528,7 @@
       "title": "VALITIC Kojic Acid Dark Spot Remover Soap Bars with Vitamin C, Retinol, Collagen, Turmeric - Original Japanese Complex Infused with Hyaluronic Acid, Vitamin E, Shea Butter, Castile Olive Oil (2 Pack)",
       "price": "$14.99",
       "rating": "4.3 out of 5 stars",
-      "reviews": "71,369",
+      "reviews": "71,376",
       "asin": "B09MFMCTRK",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71FF60ZljPL._AC_UL600_SR600,400_.jpg"
     },
@@ -537,7 +537,7 @@
       "title": "BIODANCE Collagen Peptide Eye Patches, Anti Wrinkle & Smile Line Patches for Face, Under Eye Mask for Fine Lines & Eye Bags, Travel Essentials & Self Care Gifts for Women, Korean Skin Care (60 Count)",
       "price": "$23.00",
       "rating": "4.6 out of 5 stars",
-      "reviews": "1,644",
+      "reviews": "1,645",
       "asin": "B0GD6R7CFJ",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61jB74Wpd5L._AC_UL600_SR600,400_.jpg"
     },
@@ -546,7 +546,7 @@
       "title": "Blue Lizard Kids Mineral SPF 50 Sunscreen Stick, Zinc Oxide, 100% Mineral Actives, Developed for Kids’ Sensitive Skin, TSA-Friendly, Vegan, Paraben-free, Fragrance-Free, 0.5 oz",
       "price": "$7.92",
       "rating": "4.6 out of 5 stars",
-      "reviews": "10,751",
+      "reviews": "10,752",
       "asin": "B083VXQ7MG",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71gE8GLCi8L._AC_UL600_SR600,400_.jpg"
     },
@@ -561,15 +561,6 @@
     },
     {
       "rank": 63,
-      "title": "Native Coconut & Vanilla Shampoo and Conditioner Contain Naturally Derived Ingredients | All Hair Types, Color & Treated, Fine to Dry Damaged, Sulfate & Dye Free - 2-Pack",
-      "price": "$19.74",
-      "rating": "4.4 out of 5 stars",
-      "reviews": "13,931",
-      "asin": "B0BBBSMV94",
-      "image": "https://images-na.ssl-images-amazon.com/images/I/71r9Zwpw9lL._AC_UL600_SR600,400_.jpg"
-    },
-    {
-      "rank": 64,
       "title": "La Roche-Posay Cicaplast Balm B5 Skin Barrier Repair Cream with Centella Asiatica, Shea Butter & Panthenol | Multi-Purpose Healing Ointment for Dry, Irritated Skin | Face, Body & Hand Balm, Baby Safe",
       "price": "$14.29",
       "rating": "4.7 out of 5 stars",
@@ -578,11 +569,20 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/713Ca5aXpyL._AC_UL600_SR600,400_.jpg"
     },
     {
+      "rank": 64,
+      "title": "Native Coconut & Vanilla Shampoo and Conditioner Contain Naturally Derived Ingredients | All Hair Types, Color & Treated, Fine to Dry Damaged, Sulfate & Dye Free - 2-Pack",
+      "price": "$19.78",
+      "rating": "4.4 out of 5 stars",
+      "reviews": "13,932",
+      "asin": "B0BBBSMV94",
+      "image": "https://images-na.ssl-images-amazon.com/images/I/71r9Zwpw9lL._AC_UL600_SR600,400_.jpg"
+    },
+    {
       "rank": 65,
       "title": "Dove Beauty Bar Soap Sensitive, 8 Bars for Sensitive Skin, Fragrance Free and Hypoallergenic 3.75 oz",
       "price": "$12.97",
       "rating": "4.8 out of 5 stars",
-      "reviews": "60,371",
+      "reviews": "60,373",
       "asin": "B001ET7IQK",
       "image": "https://images-na.ssl-images-amazon.com/images/I/712pSSuh5vL._AC_UL600_SR600,400_.jpg"
     },
@@ -591,7 +591,7 @@
       "title": "L'Oreal Paris Infallible 3-Second Setting Spray Mist, Microfine Mist for up to 36HR Wear, Clear, 1.76 oz",
       "price": "$10.98",
       "rating": "4.4 out of 5 stars",
-      "reviews": "12,793",
+      "reviews": "12,794",
       "asin": "B0CZF2T7CK",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71RRt40E5yL._AC_UL600_SR600,400_.jpg"
     },
@@ -600,7 +600,7 @@
       "title": "Degree Men Original Antiperspirant Deodorant Cool Rush Twin Pack 48-Hour Sweat & Odor Protection Antiperspirant For Men 2.7 oz",
       "price": "$5.46",
       "rating": "4.7 out of 5 stars",
-      "reviews": "17,083",
+      "reviews": "17,082",
       "asin": "B00TPRG5D0",
       "image": "https://images-na.ssl-images-amazon.com/images/I/81Xu5Vq4goL._AC_UL600_SR600,400_.jpg"
     },
@@ -618,7 +618,7 @@
       "title": "The Ordinary Azelaic Acid Suspension 10%, Formula for Uneven and Blemish-Prone Skin",
       "price": "$12.20",
       "rating": "4.5 out of 5 stars",
-      "reviews": "7,654",
+      "reviews": "7,656",
       "asin": "B06WD5J8KY",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51LloWpF62L._AC_UL600_SR600,400_.jpg"
     },
@@ -627,7 +627,7 @@
       "title": "Anua PDRN Collagen Glow Facial Serum Spray, Hydrating Face Mist, Hyaluronic Acid, dewy glass finish, All Skin Types, Instant Plumping Hydration, Firming Care, Korean Skincare, 3.38 fl oz",
       "price": "$21.00",
       "rating": "4.5 out of 5 stars",
-      "reviews": "3,947",
+      "reviews": "3,950",
       "asin": "B0FVT77ZLL",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71LQ-32prpL._AC_UL600_SR600,400_.jpg"
     },
@@ -636,7 +636,7 @@
       "title": "method Body Wash, Simply Nourish - Leaves Skin Feeling Soft & Moisturized, Made Without Parabens, Notes of Coconut, Rice Milk & Shea Butter, 28 Fl Oz",
       "price": "$12.00",
       "rating": "4.7 out of 5 stars",
-      "reviews": "12,938",
+      "reviews": "12,937",
       "asin": "B0BT1WL6KY",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51M-cv3lKcL._AC_UL600_SR600,400_.jpg"
     },
@@ -645,7 +645,7 @@
       "title": "Goddvenus Lash Clusters Kit Wispy Eyelash Clusters Lashes Natural DIY Lash Extension Kit 10-16mm Cluster Eyelash Extensions Kit 300pcs C Curl Individual Lashes Cluster Eyelash (No Tweezers)",
       "price": "$14.99",
       "rating": "4.4 out of 5 stars",
-      "reviews": "10,488",
+      "reviews": "10,490",
       "asin": "B0DK8DCVK7",
       "image": "https://images-na.ssl-images-amazon.com/images/I/912brfxrF+L._AC_UL600_SR600,400_.jpg"
     },
@@ -654,7 +654,7 @@
       "title": "Olay Body Lotion for Women, Firming with Collagen Peptides Serum, Visibly Firmer Skin, 24hr Moisture & Hydration, Fast Absorbing Formula, Vitamin B3 Complex, For All Skin Types, 17 fl oz",
       "price": "$9.99",
       "rating": "4.6 out of 5 stars",
-      "reviews": "13,995",
+      "reviews": "13,997",
       "asin": "B0D7XXQYNH",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71VSHcB+C3L._AC_UL600_SR600,400_.jpg"
     },
@@ -690,7 +690,7 @@
       "title": "medicube Wrapping Mask Collagen Overnight Peel Off Facial Mask | Elasticity & Hydration Care, Reduces Sagging & Dullness | Hydrolyzed Collagen For Glowing Skin | Korean Skin Care, 2.53 fl.oz",
       "price": "$19.00",
       "rating": "4.5 out of 5 stars",
-      "reviews": "21,973",
+      "reviews": "21,976",
       "asin": "B0BRMYHMS5",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61occWCJN-L._AC_UL600_SR600,400_.jpg"
     },
@@ -708,7 +708,7 @@
       "title": "Bio-Oil Skincare Body Oil Serum for Scars and Stretch Marks, Face and Body Moisturizer with Vitamin E & A for Sensitive Dry Skin, Dermatologist Recommended, Non-Comedogenic, 4.2 Oz",
       "price": "$20.97",
       "rating": "4.6 out of 5 stars",
-      "reviews": "179,205",
+      "reviews": "179,207",
       "asin": "B004AI97MA",
       "image": "https://images-na.ssl-images-amazon.com/images/I/616kC3A3jwL._AC_UL600_SR600,400_.jpg"
     },
@@ -717,7 +717,7 @@
       "title": "e.l.f. Sheer For It Blush Tint, Multi-Use, Long-Lasting Lip & Cheek Makeup, Creates A Natural Flush Finish, Vegan & Cruelty-Free, Cherry Cola",
       "price": "$5.00",
       "rating": "4.4 out of 5 stars",
-      "reviews": "8,502",
+      "reviews": "8,503",
       "asin": "B0F3J6W5KW",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61yMLyhZixL._AC_UL600_SR600,400_.jpg"
     },
@@ -726,7 +726,7 @@
       "title": "Neutrogena Ultra Sheer Dry Touch Sunscreen Lotion SPF 70 Broad Spectrum UVA UVB Protection Lightweight Water Resistant up to 80 Minutes Oil PABA Oxybenzone Free, 3 fl oz",
       "price": "$9.88",
       "rating": "4.5 out of 5 stars",
-      "reviews": "39,292",
+      "reviews": "39,293",
       "asin": "B005IHT94S",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61PuCE6NoTL._AC_UL300_SR300,200_.jpg"
     },
@@ -735,7 +735,7 @@
       "title": "medicube PDRN Pink Collagen Volume Multi Balm Stick | Volufiline, PDRN, NAD, Collagen | Face & Body Balm for Under-Eyes, Neck, Forehead, Smile Lines, Lips | Plumping, Radiance, Line Care | K-Beauty",
       "price": "$19.90",
       "rating": "3.9 out of 5 stars",
-      "reviews": "659",
+      "reviews": "661",
       "asin": "B0GHMZXX8Y",
       "image": "https://images-na.ssl-images-amazon.com/images/I/613iSS1QL9L._AC_UL300_SR300,200_.jpg"
     },
@@ -744,7 +744,7 @@
       "title": "Anua Azelaic Acid 10 Hyaluron Redness Soothing Serum, Facial Serum for Blemish-Prone & Oily-Prone Skin, Lightweight & Hydrating Blemish Care, Hyaluronic Acid, Korean Skincare, 1.01 fl oz.",
       "price": "$22.00",
       "rating": "4.5 out of 5 stars",
-      "reviews": "5,087",
+      "reviews": "5,088",
       "asin": "B0DG1DQ2S7",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61sSYnrc1zL._AC_UL300_SR300,200_.jpg"
     },
@@ -762,7 +762,7 @@
       "title": "Ear and Nose Hair Trimmer Clipper - 2026 Professional Painless Eyebrow & Facial Hair Trimmer for Men Women,Battery-Operated Trimmer with IPX7 Waterproof,Dual Edge Blades for Easy Cleansing Black",
       "price": "$9.99",
       "rating": "4.4 out of 5 stars",
-      "reviews": "93,587",
+      "reviews": "93,588",
       "asin": "B098NSHBQK",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61ox1Eh9FaL._AC_UL300_SR300,200_.jpg"
     },
@@ -789,7 +789,7 @@
       "title": "Schick Hydro Silk Touch-Up Dermaplaning Tool with Precision Cover, 3ct | Dermaplane Razor, Face Razors for Women, Peach Fuzz Remover",
       "price": "$5.94",
       "rating": "4.6 out of 5 stars",
-      "reviews": "199,996",
+      "reviews": "199,995",
       "asin": "B0787GLBMV",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71tycmrP+oL._AC_UL300_SR300,200_.jpg"
     },
@@ -798,7 +798,7 @@
       "title": "COLOR WOW Dream Coat Supernatural Spray, Anti-Humidity Frizz Control and Heat Protectant for Glassy, Shiny Hair",
       "price": "$30.00",
       "rating": "4.3 out of 5 stars",
-      "reviews": "109,536",
+      "reviews": "109,539",
       "asin": "B073CWSQ51",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51UYq7UwqrL._AC_UL300_SR300,200_.jpg"
     },
@@ -807,30 +807,39 @@
       "title": "medicube Facial Cleanser Zero Pore Capsule Cleansing Foam | Daily Gentle Cleanser for Skin Texture, Blackhead & Pore Care | AHA, BHA & PHA for Deep Cleansing | Korean Skincare, 4.23 oz",
       "price": "$14.90",
       "rating": "4.6 out of 5 stars",
-      "reviews": "3,010",
+      "reviews": "3,011",
       "asin": "B0DYTQ5GYQ",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61vXRV5ShmL._AC_UL300_SR300,200_.jpg"
     },
     {
       "rank": 91,
+      "title": "method Foaming Hand Wash Refill, Sea Minerals- Refills Up to 3X, for Bathroom & Kitchen, Leaves Hands Soft, Bergamot, Lemon & Rosemary Notes, 28 fl oz",
+      "price": "$7.49",
+      "rating": "N/A",
+      "reviews": "N/A",
+      "asin": "B092RB7LQW",
+      "image": "https://images-na.ssl-images-amazon.com/images/I/51OCJtAiaQL._AC_UL300_SR300,200_.jpg"
+    },
+    {
+      "rank": 92,
       "title": "Abib Airy Sunstick Protection Bar SPF50+ Broad Spectrum, Semi-Matte Sunscreen Stick for Oily & Combination Skin, No White Cast, Water-Resistant, Korean Sunscreen, 0.81 oz / 23 g",
       "price": "$13.88",
       "rating": "4.6 out of 5 stars",
-      "reviews": "3,636",
+      "reviews": "3,639",
       "asin": "B0C45CK57M",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71t8XJZ7IkL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 92,
+      "rank": 93,
       "title": "L3 Level 3 Styling Powder - Natural Look Volumizing and Texturizing Powder - Easy to Apply with No Oil or Greasy Residue",
-      "price": "$9.52",
+      "price": "$9.77",
       "rating": "4.5 out of 5 stars",
       "reviews": "29,759",
       "asin": "B08SNSSTPZ",
       "image": "https://images-na.ssl-images-amazon.com/images/I/61E9d8d0PNL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 93,
+      "rank": 94,
       "title": "AmLactin Daily Nourish Therapeutic Body Lotion for Dry Skin - No-Scrub Exfoliator and Moisturizer 12% Lactic Acid Lotion, 14.1 oz (Packaging May Vary)",
       "price": "$15.97",
       "rating": "4.4 out of 5 stars",
@@ -839,7 +848,7 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/61-oMwlzmfL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 94,
+      "rank": 95,
       "title": "Maybelline Instant Age Rewind Eraser Dark Circles Treatment Multi-Use Concealer, 110, 1 Count (Packaging May Vary)",
       "price": "$9.98",
       "rating": "4.5 out of 5 stars",
@@ -848,25 +857,25 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/61Rvwym7itL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 95,
+      "rank": 96,
       "title": "BOLDIFY Hairline Powder - Water-Resistant Root Touch Up Hair Color for Gray Coverage - 24-Hour Stain-Proof, Mess-Free Hair Powder for Thinning Hair",
       "price": "$17.95",
       "rating": "4.4 out of 5 stars",
-      "reviews": "11,267",
+      "reviews": "11,268",
       "asin": "B08N1CWL7S",
       "image": "https://images-na.ssl-images-amazon.com/images/I/51rzBM-eqOL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 96,
+      "rank": 97,
       "title": "COSRX Snail Mucin 96% Repairing Serum, Hydrating Serum for Face with Snail Secretion Filtrate for Dull Skin & Fine Lines, 100ml, Korean Skin Care",
       "price": "$14.63",
       "rating": "4.6 out of 5 stars",
-      "reviews": "105,324",
+      "reviews": "105,325",
       "asin": "B00PBX3L7K",
       "image": "https://images-na.ssl-images-amazon.com/images/I/416kUGx2rQL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 97,
+      "rank": 98,
       "title": "Cetaphil Gentle Makeup Removing Face Wipes, Daily Cleansing Facial Towelettes Gently Remove Makeup, Fragrance and Alcohol Free, 25 Count",
       "price": "$6.85",
       "rating": "4.7 out of 5 stars",
@@ -875,31 +884,22 @@
       "image": "https://images-na.ssl-images-amazon.com/images/I/61S9g7bfKEL._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 98,
+      "rank": 99,
       "title": "Banana Boat Sport Ultra SPF 50 Sunscreen Lotion, 12oz | Banana Boat Sunscreen SPF 50 Lotion, Oxybenzone-Free, Sunblock, Family Size, 12oz (Pack of 1)",
       "price": "$10.97",
       "rating": "4.6 out of 5 stars",
-      "reviews": "18,729",
+      "reviews": "18,730",
       "asin": "B004CDV7EY",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71FCEj13W7L._AC_UL300_SR300,200_.jpg"
     },
     {
-      "rank": 99,
+      "rank": 100,
       "title": "K18 Leave-In Molecular Repair Hair Mask, Patented, Lasting Repair For Dry, Frizzy, Damaged Hair, Reverse Damage In 4 Minutes From Bleach, Color, Chemical Services + Heat",
       "price": "$29.00",
       "rating": "4.3 out of 5 stars",
-      "reviews": "30,361",
+      "reviews": "30,362",
       "asin": "B09HR5KSR8",
       "image": "https://images-na.ssl-images-amazon.com/images/I/71WKpWKG6kL._AC_UL300_SR300,200_.jpg"
-    },
-    {
-      "rank": 100,
-      "title": "CeraVe Skin Renewing Night Cream, Peptide Complex, Hyaluronic Acid & Ceramide Moisturizer for Face, 1.7 Ounce",
-      "price": "$15.44",
-      "rating": "4.6 out of 5 stars",
-      "reviews": "56,564",
-      "asin": "B00SNPCSUY",
-      "image": "https://images-na.ssl-images-amazon.com/images/I/71Wx3vqcx-L._AC_UL300_SR300,200_.jpg"
     }
   ]
 }
